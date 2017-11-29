@@ -124,6 +124,13 @@ class TrezorCompatiblePlugin(HW_PluginBase):
             self.print_error("ping failed", str(e))
             return None
 
+        if not client.supports_coin("Vertcoin"):
+            msg = (_('This TREZOR does not support Vertcoin. '
+                     'Please update the firmware.'))
+            self.print_error(msg)
+            handler.show_error(msg)
+            return None
+
         if not client.atleast_version(*self.minimum_firmware):
             msg = (_('Outdated %s firmware for device labelled %s. Please '
                      'download the updated firmware from %s') %
