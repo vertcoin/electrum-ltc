@@ -24,8 +24,8 @@
 # SOFTWARE.
 import socket
 
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 import PyQt4.QtCore as QtCore
 
 from electrum_vtc.i18n import _

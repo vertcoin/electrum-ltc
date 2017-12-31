@@ -4,12 +4,18 @@
 ELECTRUM_GIT_URL=git://github.com/vertcoin/electrum-vtc.git
 BRANCH=master
 NAME_ROOT=electrum-vtc
+PYTHON_VERSION=3.5.4
 
+if [ "$#" -gt 0 ]; then
+    BRANCH="$1"
+fi
 
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONHASHSEED=22
 
-PYHOME=c:/python27
+PYHOME=c:/python$PYTHON_VERSION
 PYTHON="wine $PYHOME/python.exe -OO -B"
 
 
@@ -35,8 +41,7 @@ fi
 cd electrum-vtc-git
 VERSION=`git describe --tags`
 echo "Last commit: $VERSION"
-
-cd ..
+popd
 
 rm -rf $WINEPREFIX/drive_c/electrum-vtc
 cp -r electrum-vtc-git $WINEPREFIX/drive_c/electrum-vtc
@@ -60,8 +65,13 @@ cd ..
 
 rm -rf dist/
 
-# build standalone version
-$PYTHON "C:/pyinstaller/pyinstaller.py" --noconfirm --ascii --name $NAME_ROOT-$VERSION.exe -w deterministic.spec
+# build standalone and portable versions
+wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --name $NAME_ROOT-$VERSION -w deterministic.spec
+
+# set timestamps in dist, in order to make the installer reproducible
+pushd dist
+find  -type f  -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+popd
 
 # build NSIS installer
 # $VERSION could be passed to the electrum.nsi script, but this would require some rewriting in the script iself.
@@ -72,3 +82,4 @@ mv electrum-vtc-setup.exe $NAME_ROOT-$VERSION-setup.exe
 cd ..
 
 echo "Done."
+md5sum dist/electrum*exe

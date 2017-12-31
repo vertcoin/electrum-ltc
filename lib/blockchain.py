@@ -26,11 +26,11 @@
 
 
 import os
-import util
+from . import util
 import threading
 
-import bitcoin
-from bitcoin import *
+from . import bitcoin
+from .bitcoin import *
 
 import lyra2re_hash
 import lyra2re2_hash
@@ -324,91 +324,90 @@ class Blockchain(util.PrintError):
         target = bitsBase << (8 * (bitsN-3))
         return target
         
-        
-    def KimotoGravityWell(self, height, chain={}):	
-	  BlocksTargetSpacing			= 2.5 * 60; # 2.5 minutes
-	  TimeDaySeconds				= 60 * 60 * 24;
-	  PastSecondsMin				= TimeDaySeconds * 0.25;
-	  PastSecondsMax				= TimeDaySeconds * 7;
-	  PastBlocksMin				    = PastSecondsMin / BlocksTargetSpacing;
-	  PastBlocksMax				    = PastSecondsMax / BlocksTargetSpacing;
+    def KimotoGravityWell(self, height, chain={}):
+        BlocksTargetSpacing            = 2.5 * 60; # 2.5 minutes
+        TimeDaySeconds                = 60 * 60 * 24;
+        PastSecondsMin                = TimeDaySeconds * 0.25;
+        PastSecondsMax                = TimeDaySeconds * 7;
+        PastBlocksMin                    = PastSecondsMin / BlocksTargetSpacing;
+        PastBlocksMax                    = PastSecondsMax / BlocksTargetSpacing;
 
-	  
-	  BlockReadingIndex             = height - 1
-	  BlockLastSolvedIndex          = height - 1
-	  TargetBlocksSpacingSeconds    = BlocksTargetSpacing
-	  PastRateAdjustmentRatio       = 1.0
-	  bnProofOfWorkLimit = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-	  
-	  if (BlockLastSolvedIndex<=0 or BlockLastSolvedIndex<PastSecondsMin):
-		new_target = bnProofOfWorkLimit
-		new_bits = self.convbits(new_target)      
-		return new_bits, new_target
 
-	  last = chain.get(BlockLastSolvedIndex)
-	  if last == None:
-	  	last = self.read_header(BlockLastSolvedIndex)
-	  
-	  for i in xrange(1,int(PastBlocksMax)+1):
-		PastBlocksMass=i
+        BlockReadingIndex             = height - 1
+        BlockLastSolvedIndex          = height - 1
+        TargetBlocksSpacingSeconds    = BlocksTargetSpacing
+        PastRateAdjustmentRatio       = 1.0
+        bnProofOfWorkLimit = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
-		reading = chain.get(BlockReadingIndex)
-   		if reading == None:
-		  reading = self.read_header(BlockReadingIndex)
-		  chain[BlockReadingIndex] = reading
-        
-		if (reading == None or last == None):
-			raise BaseException("Could not find previous blocks when calculating difficulty reading: " + str(BlockReadingIndex) + ", last: " + str(BlockLastSolvedIndex) + ", height: " + str(height))
-        	
-		if (i == 1):
-		  PastDifficultyAverage=self.convbignum(reading.get('bits'))
-		else:
-		  PastDifficultyAverage= float((self.convbignum(reading.get('bits')) - PastDifficultyAveragePrev) / float(i)) + PastDifficultyAveragePrev;
-         
-		PastDifficultyAveragePrev = PastDifficultyAverage;
-		
-		PastRateActualSeconds   = last.get('timestamp') - reading.get('timestamp');
-		PastRateTargetSeconds   = TargetBlocksSpacingSeconds * PastBlocksMass;
-		PastRateAdjustmentRatio       = 1.0
-		if (PastRateActualSeconds < 0):
-		  PastRateActualSeconds = 0.0
-		
-		if (PastRateActualSeconds != 0 and PastRateTargetSeconds != 0):
-		  PastRateAdjustmentRatio			= float(PastRateTargetSeconds) / float(PastRateActualSeconds)
-		
-		EventHorizonDeviation       = 1 + (0.7084 * pow(float(PastBlocksMass)/float(144), -1.228))
-		EventHorizonDeviationFast   = EventHorizonDeviation
-		EventHorizonDeviationSlow		= float(1) / float(EventHorizonDeviation)
-		
-		#print_msg ("EventHorizonDeviation=",EventHorizonDeviation,"EventHorizonDeviationFast=",EventHorizonDeviationFast,"EventHorizonDeviationSlow=",EventHorizonDeviationSlow ) 
-		
-		if (PastBlocksMass >= PastBlocksMin):
-		
-		  if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) or (PastRateAdjustmentRatio >= EventHorizonDeviationFast)):
-			break;
-			 
-		  if (BlockReadingIndex<1):
-			break
-				
-		BlockReadingIndex = BlockReadingIndex -1;
-		#print_msg ("BlockReadingIndex=",BlockReadingIndex )
-		
-	  #print_msg ("for end: PastBlocksMass=",PastBlocksMass ) 
-	  bnNew   = PastDifficultyAverage
-	  if (PastRateActualSeconds != 0 and PastRateTargetSeconds != 0):
-		bnNew *= float(PastRateActualSeconds);
-		bnNew /= float(PastRateTargetSeconds);
-		
-	  if (bnNew > bnProofOfWorkLimit):
-		bnNew = bnProofOfWorkLimit
+        if (BlockLastSolvedIndex<=0 or BlockLastSolvedIndex<PastSecondsMin):
+            new_target = bnProofOfWorkLimit
+            new_bits = self.convbits(new_target)
+            return new_bits, new_target
 
-	  # new target
-	  new_target = bnNew
-	  new_bits = self.convbits(new_target)
+        last = chain.get(BlockLastSolvedIndex)
+        if last == None:
+            last = self.read_header(BlockLastSolvedIndex)
 
-	  #print_msg("bits", new_bits , "(", hex(new_bits),")")
-	 #print_msg ("PastRateAdjustmentRatio=",PastRateAdjustmentRatio,"EventHorizonDeviationSlow",EventHorizonDeviationSlow,"PastSecondsMin=",PastSecondsMin,"PastSecondsMax=",PastSecondsMax,"PastBlocksMin=",PastBlocksMin,"PastBlocksMax=",PastBlocksMax)    
-	  return new_bits, new_target
+        for i in xrange(1,int(PastBlocksMax)+1):
+            PastBlocksMass=i
+
+            reading = chain.get(BlockReadingIndex)
+            if reading == None:
+                reading = self.read_header(BlockReadingIndex)
+                chain[BlockReadingIndex] = reading
+
+            if (reading == None or last == None):
+                raise BaseException("Could not find previous blocks when calculating difficulty reading: " + str(BlockReadingIndex) + ", last: " + str(BlockLastSolvedIndex) + ", height: " + str(height))
+
+            if (i == 1):
+                PastDifficultyAverage=self.convbignum(reading.get('bits'))
+            else:
+                PastDifficultyAverage= float((self.convbignum(reading.get('bits')) - PastDifficultyAveragePrev) / float(i)) + PastDifficultyAveragePrev;
+
+            PastDifficultyAveragePrev = PastDifficultyAverage;
+
+            PastRateActualSeconds   = last.get('timestamp') - reading.get('timestamp');
+            PastRateTargetSeconds   = TargetBlocksSpacingSeconds * PastBlocksMass;
+            PastRateAdjustmentRatio       = 1.0
+            if (PastRateActualSeconds < 0):
+                PastRateActualSeconds = 0.0
+
+            if (PastRateActualSeconds != 0 and PastRateTargetSeconds != 0):
+                PastRateAdjustmentRatio            = float(PastRateTargetSeconds) / float(PastRateActualSeconds)
+
+            EventHorizonDeviation       = 1 + (0.7084 * pow(float(PastBlocksMass)/float(144), -1.228))
+            EventHorizonDeviationFast   = EventHorizonDeviation
+            EventHorizonDeviationSlow        = float(1) / float(EventHorizonDeviation)
+
+            #print_msg ("EventHorizonDeviation=",EventHorizonDeviation,"EventHorizonDeviationFast=",EventHorizonDeviationFast,"EventHorizonDeviationSlow=",EventHorizonDeviationSlow )
+
+            if (PastBlocksMass >= PastBlocksMin):
+
+                if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) or (PastRateAdjustmentRatio >= EventHorizonDeviationFast)):
+                    break;
+
+            if (BlockReadingIndex<1):
+                break
+
+            BlockReadingIndex = BlockReadingIndex -1;
+            #print_msg ("BlockReadingIndex=",BlockReadingIndex )
+
+        #print_msg ("for end: PastBlocksMass=",PastBlocksMass )
+        bnNew   = PastDifficultyAverage
+        if (PastRateActualSeconds != 0 and PastRateTargetSeconds != 0):
+            bnNew *= float(PastRateActualSeconds);
+            bnNew /= float(PastRateTargetSeconds);
+
+        if (bnNew > bnProofOfWorkLimit):
+            bnNew = bnProofOfWorkLimit
+
+        # new target
+        new_target = bnNew
+        new_bits = self.convbits(new_target)
+
+        #print_msg("bits", new_bits , "(", hex(new_bits),")")
+        #print_msg ("PastRateAdjustmentRatio=",PastRateAdjustmentRatio,"EventHorizonDeviationSlow",EventHorizonDeviationSlow,"PastSecondsMin=",PastSecondsMin,"PastSecondsMax=",PastSecondsMax,"PastBlocksMin=",PastBlocksMin,"PastBlocksMax=",PastBlocksMax)
+        return new_bits, new_target
 
     def get_target(self, height, chain={}):
         if bitcoin.TESTNET:

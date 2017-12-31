@@ -26,8 +26,8 @@
 from electrum_vtc.i18n import _
 
 import PyQt4
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
 from util import *
 from history_list import HistoryList

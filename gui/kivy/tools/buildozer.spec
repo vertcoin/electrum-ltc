@@ -31,14 +31,13 @@ version.filename = %(source.dir)s/contrib/versions.py
 #version = 1.9.8
 
 # (list) Application requirements
-requirements = hostpython2, android, openssl, pycrypto, pil, plyer, kivy==master
+requirements = python3crystax, android, openssl, plyer, kivy==master
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/gui/kivy/theming/splash.png
 presplash.filename = %(source.dir)s/icons/electrum_presplash.png
 
 # (str) Icon of the application
-#icon.filename = %(source.dir)s/icons/electrum_android_launcher_icon.png
 icon.filename = %(source.dir)s/icons/electrum_launcher.png
 
 # (str) Supported orientation (one of landscape, portrait or all)
@@ -70,7 +69,7 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-#android.ndk_path =
+android.ndk_path = /opt/crystax-ndk-10.3.2
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
 #android.sdk_path =
