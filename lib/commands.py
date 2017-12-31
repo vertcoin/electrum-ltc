@@ -81,7 +81,7 @@ def command(s):
             wallet = args[0].wallet
             password = kwargs.get('password')
             if c.requires_wallet and wallet is None:
-                raise BaseException("wallet not loaded. Use 'electrum-ltc daemon load_wallet'")
+                raise BaseException("wallet not loaded. Use 'electrum-vtc daemon load_wallet'")
             if c.requires_password and password is None and wallet.storage.get('use_encryption'):
                 return {'error': 'Password required' }
             return func(*args, **kwargs)
@@ -569,7 +569,7 @@ class Commands:
             PR_PAID: 'Paid',
             PR_EXPIRED: 'Expired',
         }
-        out['amount (LTC)'] = format_satoshis(out.get('amount'))
+        out['amount (VTC)'] = format_satoshis(out.get('amount'))
         out['status'] = pr_str[out.get('status', PR_UNKNOWN)]
         return out
 
@@ -708,7 +708,7 @@ command_options = {
     'labels':      ("-l", "Show the labels of listed addresses"),
     'nocheck':     (None, "Do not verify aliases"),
     'imax':        (None, "Maximum number of inputs"),
-    'fee':         ("-f", "Transaction fee (in LTC)"),
+    'fee':         ("-f", "Transaction fee (in VTC)"),
     'from_addr':   ("-F", "Source address (must be a wallet address; use sweep to spend from non-wallet address)."),
     'change_addr': ("-c", "Change address. Default is a spare address, or the source address if it's not in the wallet"),
     'nbits':       (None, "Number of bits of entropy"),
@@ -754,10 +754,10 @@ config_variables = {
         'requests_dir': 'directory where a bip70 file will be written.',
         'ssl_privkey': 'Path to your SSL private key, needed to sign the request.',
         'ssl_chain': 'Chain of SSL certificates, needed for signed requests. Put your certificate at the top and the root CA at the end',
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of vertcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-ltc.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of vertcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum.vertcoin.org/\')\"',
     },
     'listrequests':{
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of vertcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum-ltc.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of vertcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum.vertcoin.org/\')\"',
     }
 }
 

@@ -414,6 +414,12 @@ class Blockchain(util.PrintError):
             return 0, 0
         if height == 0 or height == 208301:
             return 0x1e0ffff0, 0x00000FFFF0000000000000000000000000000000000000000000000000000000
+        if height == 468741:
+            bits = 469820683
+            bitsBase = bits & 0xffffff
+            bitsN = (bits >> 24) & 0xff
+            target = bitsBase << (8 * (bitsN - 3))
+            return bits, target 
         if height < 26754:
             # Litecoin: go back the full period unless it's the first retarget
             first = self.read_header((height - 2016 - 1 if height > 2016 else 0))

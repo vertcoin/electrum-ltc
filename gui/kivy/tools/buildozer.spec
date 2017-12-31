@@ -1,7 +1,7 @@
 [app]
 
 # (str) Title of your application
-title = Electrum-LTC
+title = Electrum-VTC
 
 # (str) Package name
 package.name = Electrum_VTC
