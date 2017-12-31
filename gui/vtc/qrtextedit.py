@@ -1,7 +1,7 @@
 from electrum_vtc.i18n import _
 from electrum_vtc.plugins import run_hook
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
 from util import ButtonsTextEdit, MessageBoxMixin
 

@@ -26,11 +26,11 @@
 
 
 import os
-import util
+from . import util
 import threading
 
-import bitcoin
-from bitcoin import *
+from . import bitcoin
+from .bitcoin import *
 
 import lyra2re_hash
 import lyra2re2_hash
@@ -323,7 +323,6 @@ class Blockchain(util.PrintError):
             raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
         target = bitsBase << (8 * (bitsN-3))
         return target
-        
         
     def KimotoGravityWell(self, height, chain={}):	
 	  BlocksTargetSpacing			= 2.5 * 60; # 2.5 minutes

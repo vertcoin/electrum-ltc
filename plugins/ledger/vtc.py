@@ -1,6 +1,6 @@
 import threading
 
-from PyQt4.Qt import (QDialog, QInputDialog, QLineEdit,
+from PyQt5.Qt import (QDialog, QInputDialog, QLineEdit,
                       QVBoxLayout, QLabel, SIGNAL)
 import PyQt4.QtCore as QtCore
 

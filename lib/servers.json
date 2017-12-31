@@ -1,0 +1,24 @@
+{
+	"fr1.vtconline.org": {
+		"t": "55001",
+		"s": "55002"
+	},
+	"uk1.vtconline.org": {
+		"t": "55001",
+		"s": "55002"
+	},
+	"vtc.horriblecoders.com": {
+		"t": "55001",
+		"s": "55002"
+	},
+	"vtc.lukechilds.co": {
+		"t": "55001",
+		"s": "55002"
+	},
+	"vtc-cce-1.coinomi.net": {
+		"t": "5028"
+	},
+	"vtc-cce-2.coinomi.net": {
+		"t": "5028"
+	}
+}
