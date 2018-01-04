@@ -1,3 +1,4 @@
+#fixme scrypt to eqh
 #!/usr/bin/env python
 #
 # scrypt.py - basic implementation of Litecoin's proof-of-work algorithm

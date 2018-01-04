@@ -310,7 +310,7 @@ class TrezorCompatiblePlugin(HW_PluginBase):
                 script_sig = txin['scriptSig'].decode('hex')
                 txinputtype.script_sig = script_sig
 
-            txinputtype.sequence = txin.get('sequence', 0xffffffff - 1)
+            txinputtype.sequence = txin.get('sequence', 0xffffffff - 1) #fixme
 
             inputs.append(txinputtype)
 

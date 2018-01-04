@@ -672,7 +672,7 @@ class Transaction:
         elif txin['type'] == 'p2wpkh-p2sh':
             pubkey = txin['pubkeys'][0]
             pkh = bitcoin.hash_160(pubkey.decode('hex')).encode('hex')
-            return '76a9' + push_script(pkh) + '88ac'
+            return '76a9' + push_script(pkh) + '88ac' #fixme
         else:
             raise TypeError('Unknown txin type', _type)
 
@@ -687,7 +687,7 @@ class Transaction:
         # Script length, script, sequence
         s += var_int(len(script)/2)
         s += script
-        s += int_to_hex(txin.get('sequence', 0xffffffff - 1), 4)
+        s += int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) #fix me
         return s
 
     def set_rbf(self, rbf):
@@ -717,7 +717,7 @@ class Transaction:
         txin = inputs[i]
         if self.is_segwit_input(txin):
             hashPrevouts = Hash(''.join(self.serialize_outpoint(txin) for txin in inputs).decode('hex')).encode('hex')
-            hashSequence = Hash(''.join(int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) for txin in inputs).decode('hex')).encode('hex')
+            hashSequence = Hash(''.join(int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) for txin in inputs).decode('hex')).encode('hex') #fixme
             hashOutputs = Hash(''.join(self.serialize_output(o) for o in outputs).decode('hex')).encode('hex')
             outpoint = self.serialize_outpoint(txin)
             preimage_script = self.get_preimage_script(txin)
@@ -782,7 +782,7 @@ class Transaction:
         return self.input_value() - self.output_value()
 
     def is_final(self):
-        return not any([x.get('sequence', 0xffffffff - 1) < 0xffffffff - 1 for x in self.inputs()])
+        return not any([x.get('sequence', 0xffffffff - 1) < 0xffffffff - 1 for x in self.inputs()]) #fixme
 
     @profiler
     def estimated_size(self):

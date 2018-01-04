@@ -529,7 +529,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def show_about(self):
         QMessageBox.about(self, "Electrum-VTC",
             _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" + 
-                _("Electrum's focus is speed, with low resource usage and simplifying Vertcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Vertcoin system."))
+                _("Electrum's focus is speed, with low resource usage and simplifying Bitcoinprivate. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoinprivate system."))
 
     def show_report_bug(self):
         msg = ' '.join([
