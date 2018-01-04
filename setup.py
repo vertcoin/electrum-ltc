@@ -31,7 +31,7 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         (os.path.join(usr_share, 'applications/'), ['electrum-vtc.desktop']),
         (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum-vtc.png'])
     ]
-
+#fixme
 setup(
     name="Electrum-VTC",
     version=version.ELECTRUM_VERSION,
@@ -41,7 +41,7 @@ setup(
         'pbkdf2',
         'requests',
         'qrcode',
-	'vtc_scrypt',
+	'vtc_scrypt', 
 	'lyra2re2_hash',
         'protobuf',
         'dnspython',
