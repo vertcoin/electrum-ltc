@@ -34,7 +34,6 @@ from .bitcoin import *
 
 import lyra2re_hash
 import lyra2re2_hash
-import vtc_scrypt
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
@@ -204,6 +203,7 @@ class Blockchain(util.PrintError):
         elif height >= 208301:
             return rev_hex(lyra2re_hash.getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
         else:
+            import vtc_scrypt
             return rev_hex(vtc_scrypt.getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
 
     def path(self):
