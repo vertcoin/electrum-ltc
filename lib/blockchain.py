@@ -28,14 +28,21 @@
 import os
 from . import util
 import threading
+import binascii
 
 from . import bitcoin
 from .bitcoin import *
+
+from .util import bh2u
 
 import lyra2re_hash
 import lyra2re2_hash
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+hex_encode = bh2u
+
+hex_decode = binascii.unhexlify
 
 def serialize_header(res):
     s = int_to_hex(res.get('version'), 4) \
@@ -47,7 +54,7 @@ def serialize_header(res):
     return s
 
 def deserialize_header(s, height):
-    hex_to_int = lambda s: int('0x' + s[::-1].encode('hex'), 16)
+    hex_to_int = lambda s: int('0x' + hex_encode(s[::-1]), 16)
     h = {}
     h['version'] = hex_to_int(s[0:4])
     h['prev_block_hash'] = hash_encode(s[4:36])
@@ -180,7 +187,7 @@ class Blockchain(util.PrintError):
         return s
 
     def deserialize_header(self, s, height):
-        hex_to_int = lambda s: int('0x' + s[::-1].encode('hex'), 16)
+        hex_to_int = lambda s: int('0x' + hex_encode(s[::-1]), 16)
         h = {}
         h['version'] = hex_to_int(s[0:4])
         h['prev_block_hash'] = hash_encode(s[4:36])
@@ -194,17 +201,17 @@ class Blockchain(util.PrintError):
     def hash_header(self, header):
         if header is None:
             return '0' * 64
-        return hash_encode(Hash(self.serialize_header(header).decode('hex')))
+        return hash_encode(Hash(hex_decode(self.serialize_header(header))))
 
     def pow_hash_header(self, header):
         height = header.get('block_height')
         if height >= 347000:
-            return rev_hex(lyra2re2_hash.getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
+            return rev_hex(hex_encode(lyra2re2_hash.getPoWHash(hex_decode(self.serialize_header(header)))))
         elif height >= 208301:
-            return rev_hex(lyra2re_hash.getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
+            return rev_hex(hex_encode(lyra2re_hash.getPoWHash(hex_decode(self.serialize_header(header)))))
         else:
             import vtc_scrypt
-            return rev_hex(vtc_scrypt.getPoWHash(self.serialize_header(header).decode('hex')).encode('hex'))
+            return rev_hex(hex_encode(vtc_scrypt.getPoWHash(hex_decode(self.serialize_header(header)))))
 
     def path(self):
         d = util.get_headers_dir(self.config)
@@ -269,7 +276,7 @@ class Blockchain(util.PrintError):
 
     def save_header(self, header):
         delta = header.get('block_height') - self.checkpoint
-        data = serialize_header(header).decode('hex')
+        data = hex_decode(serialize_header(header))
         assert delta == self.size()
         assert len(data) == 80
         self.write(data, delta*80)
@@ -479,7 +486,7 @@ class Blockchain(util.PrintError):
 
     def connect_chunk(self, idx, hexdata):
         try:
-            data = hexdata.decode('hex')
+            data = hex_decode(hexdata)
             self.verify_chunk(idx, data)
             #self.print_error("validated chunk %d" % idx)
             self.save_chunk(idx, data)
