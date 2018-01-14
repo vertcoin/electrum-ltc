@@ -41,7 +41,7 @@ setup(
         'pbkdf2',
         'requests',
         'qrcode',
-        'vtc_scrypt',
+        # 'vtc_scrypt',
         'lyra2re2_hash',
         'protobuf',
         'dnspython',
