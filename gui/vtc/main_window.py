@@ -42,7 +42,7 @@ import PyQt5.QtCore as QtCore
 from . import icons_rc
 
 from electrum_vtc import keystore
-from electrum_vtc.bitcoin import COIN, is_valid, TYPE_ADDRESS
+from electrum_vtc.bitcoin import COIN, is_address, TYPE_ADDRESS
 from electrum_vtc.plugins import run_hook
 from electrum_vtc.i18n import _
 from electrum_vtc.util import (format_time, format_satoshis, PrintError,
@@ -1627,7 +1627,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.payto_e.setFocus()
 
     def set_contact(self, label, address):
-        if not is_valid(address):
+        if not is_address(address):
             self.show_error(_('Invalid Address'))
             self.contact_list.update()  # Displays original unchanged value
             return False
