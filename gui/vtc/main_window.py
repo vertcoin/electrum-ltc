@@ -402,7 +402,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             try:
                 shutil.copy2(path, new_path)
                 self.show_message(_("A copy of your wallet file was created in")+" '%s'" % str(new_path), title=_("Wallet backup created"))
-            except (IOError, os.error), reason:
+            except (IOError, os.error) as reason:
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
 
     def update_recently_visited(self, filename):
@@ -2208,7 +2208,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 with open(fileName, 'w+') as f:
                     json.dump(labels, f, indent=4, sort_keys=True)
                 self.show_message(_("Your labels were exported to") + " '%s'" % str(fileName))
-        except (IOError, os.error), reason:
+        except (IOError, os.error) as reason:
             self.show_critical(_("Electrum was unable to export your labels.") + "\n" + str(reason))
 
 
@@ -2232,7 +2232,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         try:
             self.do_export_history(self.wallet, filename, csv_button.isChecked())
-        except (IOError, os.error), reason:
+        except (IOError, os.error) as reason:
             export_error_label = _("Electrum was unable to produce a transaction export.")
             self.show_critical(export_error_label + "\n" + str(reason), title=_("Unable to export history"))
             return
