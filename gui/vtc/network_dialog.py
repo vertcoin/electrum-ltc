@@ -29,7 +29,7 @@ from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
 
 from electrum_vtc.i18n import _
-from lib import bitcoin
+from electrum_vtc import bitcoin
 from electrum_vtc.network import serialize_server, deserialize_server
 
 from .util import *

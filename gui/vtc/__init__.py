@@ -54,14 +54,14 @@ except Exception:
     sys.exit(1)
 
 try:
-    import style_rc
+    from . import style_rc
 except Exception:
     print("Error: Could not find style file.")
     print("Please run 'pyrcc5 style.qrc -o gui/vtc/style_rc.py', and reinstall Electrum")
     sys.exit(1)
 
-from util import *   # * needed for plugins
-from main_window import ElectrumWindow
+from .util import *   # * needed for plugins
+from .main_window import ElectrumWindow
 
 
 class OpenFileEventFilter(QObject):
