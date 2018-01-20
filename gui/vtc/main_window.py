@@ -34,12 +34,12 @@ from decimal import Decimal
 import base64
 from functools import partial
 
-import PyQt4
+import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtCore as QtCore
+import PyQt5.QtCore as QtCore
 
-import icons_rc
+from . import icons_rc
 
 from electrum_vtc import keystore
 from electrum_vtc.bitcoin import COIN, is_valid, TYPE_ADDRESS
@@ -82,7 +82,7 @@ class StatusBarButton(QPushButton):
         self.setIconSize(QSize(25,25))
 
     def onPress(self, checked=False):
-        '''Drops the unwanted PyQt4 "checked" argument'''
+        '''Drops the unwanted PyQt5 "checked" argument'''
         self.func()
 
     def keyPressEvent(self, e):

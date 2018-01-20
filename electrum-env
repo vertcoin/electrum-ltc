@@ -6,7 +6,7 @@
 # without any installations. Additionally, the PYTHONPATH environment
 # variable is set properly before running Electrum.
 #
-# python-qt and its dependencies will still need to be installed with
+# python3-pyqt5 and its dependencies will still need to be installed with
 # your package manager.
 
 if [ -e ./env/bin/activate ]; then

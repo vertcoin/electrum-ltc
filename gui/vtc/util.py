@@ -4,13 +4,14 @@ import traceback
 import sys
 import threading
 import platform
-import Queue
+import queue as Queue
 from collections import namedtuple
 from functools import partial
 
 from electrum_vtc.i18n import _
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 
 MONOSPACE_FONT = 'Source Code Pro'    
 

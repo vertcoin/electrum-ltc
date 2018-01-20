@@ -1,9 +1,9 @@
 from electrum_vtc.i18n import _
 
-import PyQt4
+import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtCore as QtCore
+import PyQt5.QtCore as QtCore
 
 import threading
 

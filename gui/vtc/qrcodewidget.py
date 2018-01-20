@@ -1,6 +1,6 @@
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtGui as QtGui
+import PyQt5.QtGui as QtGui
 
 import os
 import qrcode

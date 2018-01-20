@@ -28,13 +28,13 @@ import os
 import signal
 
 try:
-    import PyQt4
+    import PyQt5
 except Exception:
-    sys.exit("Error: Could not import PyQt4 on Linux systems, you may try 'sudo apt-get install python-qt4'")
+    sys.exit("Error: Could not import PyQt5 on Linux systems, you may try 'sudo apt-get install python3-pyqt5'")
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtCore as QtCore
+import PyQt5.QtCore as QtCore
 
 from electrum_vtc.i18n import _, set_language
 from electrum_vtc.plugins import run_hook
@@ -43,21 +43,21 @@ from electrum_vtc.synchronizer import Synchronizer
 from electrum_vtc.verifier import SPV
 from electrum_vtc.util import DebugMem, UserCancelled, InvalidPassword
 from electrum_vtc.wallet import Abstract_Wallet
-from installwizard import InstallWizard, GoBack
+from .installwizard import InstallWizard, GoBack
 
 
 try:
-    import icons_rc
+    from . import icons_rc
 except Exception:
-    print "Error: Could not find icons file."
-    print "Please run 'pyrcc4 icons.qrc -o gui/vtc/icons_rc.py', and reinstall Electrum"
+    print("Error: Could not find icons file.")
+    print("Please run 'pyrcc5 icons.qrc -o gui/vtc/icons_rc.py', and reinstall Electrum")
     sys.exit(1)
 
 try:
     import style_rc
 except Exception:
-    print "Error: Could not find style file."
-    print "Please run 'pyrcc4 style.qrc -o gui/vtc/style_rc.py', and reinstall Electrum"
+    print("Error: Could not find style file.")
+    print("Please run 'pyrcc5 style.qrc -o gui/vtc/style_rc.py', and reinstall Electrum")
     sys.exit(1)
 
 from util import *   # * needed for plugins
@@ -111,7 +111,7 @@ class ElectrumGui:
     def init_stylesheet(self):
         f = QFile(":vtcstyle/style.qss")
         if not f.exists():
-            print "Unable to load stylesheet, file not found in resources"
+            print("Unable to load stylesheet, file not found in resources")
             sys.exit(1)
         f.open(QFile.ReadOnly | QFile.Text)
         ts = QTextStream(f)

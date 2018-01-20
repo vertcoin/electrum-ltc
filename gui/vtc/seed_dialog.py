@@ -27,8 +27,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from electrum_vtc.i18n import _
 
-from util import *
-from qrtextedit import ShowQRTextEdit, ScanQRTextEdit
+from .util import *
+from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 
 
 def seed_warning_msg(seed):

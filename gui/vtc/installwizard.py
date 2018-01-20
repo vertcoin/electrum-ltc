@@ -3,7 +3,7 @@ import os
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtCore as QtCore
+import PyQt5.QtCore as QtCore
 
 import electrum_vtc as electrum
 from electrum_vtc import Wallet, WalletStorage
@@ -11,10 +11,10 @@ from electrum_vtc.util import UserCancelled, InvalidPassword
 from electrum_vtc.base_wizard import BaseWizard
 from electrum_vtc.i18n import _
 
-from seed_dialog import SeedLayout, KeysLayout
-from network_dialog import NetworkChoiceLayout
-from util import *
-from password_dialog import PasswordLayout, PW_NEW
+from .seed_dialog import SeedLayout, KeysLayout
+from .network_dialog import NetworkChoiceLayout
+from .util import *
+from .password_dialog import PasswordLayout, PW_NEW
 
 
 class GoBack(Exception):

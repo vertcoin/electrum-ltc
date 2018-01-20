@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import vtctabbar
-import icons_rc
+from . import icons_rc
 
 
 class VtcTabWidget(QTabWidget):

@@ -30,8 +30,8 @@ from urllib import quote
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt4.QtCore as QtCore
-import PyQt4.QtGui as QtGui
+import PyQt5.QtCore as QtCore
+import PyQt5.QtGui as QtGui
 
 from electrum_vtc_gui.qt.qrcodewidget import QRCodeWidget
 from electrum_vtc.i18n import _
