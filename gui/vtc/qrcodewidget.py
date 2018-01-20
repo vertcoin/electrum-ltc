@@ -1,5 +1,6 @@
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 import PyQt5.QtGui as QtGui
 
 import os
@@ -7,7 +8,7 @@ import qrcode
 
 import electrum_vtc
 from electrum_vtc.i18n import _
-from util import WindowModalDialog
+from .util import WindowModalDialog
 
 
 class QRCodeWidget(QWidget):

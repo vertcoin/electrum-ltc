@@ -3,6 +3,7 @@ from electrum_vtc.i18n import _
 import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 import PyQt5.QtCore as QtCore
 
 import threading

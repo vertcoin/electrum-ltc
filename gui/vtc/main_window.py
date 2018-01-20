@@ -57,18 +57,18 @@ try:
 except:
     plot_history = None
 
-from amountedit import AmountEdit, BTCAmountEdit, MyLineEdit, BTCkBEdit
-from qrcodewidget import QRCodeWidget, QRDialog
-from qrtextedit import ShowQRTextEdit
-from transaction_dialog import show_transaction
-from fee_slider import FeeSlider
-from vtctabwidget import VtcTabWidget
+from .amountedit import AmountEdit, BTCAmountEdit, MyLineEdit, BTCkBEdit
+from .qrcodewidget import QRCodeWidget, QRDialog
+from .qrtextedit import ShowQRTextEdit
+from .transaction_dialog import show_transaction
+from .fee_slider import FeeSlider
+from .vtctabwidget import VtcTabWidget
 
 
 from electrum_vtc import ELECTRUM_VERSION
 import re
 
-from util import *
+from .util import *
 
 
 class StatusBarButton(QPushButton):

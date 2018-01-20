@@ -37,7 +37,7 @@ from electrum_vtc.bitcoin import base_encode
 from electrum_vtc.i18n import _
 from electrum_vtc.plugins import run_hook
 
-from util import *
+from .util import *
 
 dialogs = []  # Otherwise python randomly garbage collects the dialogs...
 
