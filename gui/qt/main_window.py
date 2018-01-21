@@ -2077,7 +2077,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def tx_from_text(self, txt):
         from electrum_vtc.transaction import tx_from_str
-		from electrum_vtc.transaction import Transaction
+        from electrum_vtc.transaction import Transaction
         try:
             tx = tx_from_str(txt)
             return Transaction(tx)
