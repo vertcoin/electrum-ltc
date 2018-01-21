@@ -26,7 +26,7 @@
 import socket
 import threading
 import time
-import xmlrpclib
+from xmlrpc import client as xmlrpclib
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
