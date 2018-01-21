@@ -291,6 +291,7 @@ class Blockchain(util.PrintError):
         if height > self.height():
             return
         delta = height - self.checkpoint
+        delta = int(delta)
         name = self.path()
         if os.path.exists(name):
             f = open(name, 'rb')
