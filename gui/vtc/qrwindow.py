@@ -26,10 +26,11 @@
 import re
 import platform
 from decimal import Decimal
-from urllib import quote
+from urllib.parse import quote
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 import PyQt5.QtCore as QtCore
 import PyQt5.QtGui as QtGui
 

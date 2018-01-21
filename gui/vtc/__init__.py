@@ -166,7 +166,10 @@ class ElectrumGui:
 
     def new_window(self, path, uri=None):
         # Use a signal as can be called from daemon thread
-        self.app.emit(SIGNAL('new_window'), path, uri)
+        if isinstance(path, tuple):
+            # FIXME: where is it passing tuple instead of str?
+            path = str(path[0])
+        self.app.new_window_signal.emit(path, uri)
 
     def show_network_dialog(self, parent):
         from network_dialog import NetworkDialog
