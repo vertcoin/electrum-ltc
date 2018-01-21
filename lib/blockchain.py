@@ -355,7 +355,7 @@ class Blockchain(util.PrintError):
         if last == None:
             last = self.read_header(BlockLastSolvedIndex)
 
-        for i in xrange(1,int(PastBlocksMax)+1):
+        for i in range(1,int(PastBlocksMax)+1):
             PastBlocksMass=i
 
             reading = chain.get(BlockReadingIndex)

@@ -35,7 +35,7 @@ class Plugin(BasePlugin):
 
         n = len(chars)
         s = []
-        for i in xrange(n):
+        for i in range(n):
             while True:
                 k = random.randint(0,n-1)
                 if k not in s:
