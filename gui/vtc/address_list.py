@@ -26,7 +26,7 @@
 
 import webbrowser
 
-from util import *
+from .util import *
 from electrum_vtc.i18n import _
 from electrum_vtc.util import block_explorer_URL, format_satoshis, format_time
 from electrum_vtc.plugins import run_hook

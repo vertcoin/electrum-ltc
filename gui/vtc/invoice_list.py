@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 
-from util import *
+from .util import *
 from electrum_vtc.i18n import _
 from electrum_vtc.util import block_explorer_URL, format_satoshis, format_time
 from electrum_vtc.plugins import run_hook
@@ -35,7 +35,7 @@ class InvoiceList(MyTreeWidget):
     def __init__(self, parent):
         MyTreeWidget.__init__(self, parent, self.create_menu, [_('Expires'), _('Requestor'), _('Description'), _('Amount'), _('Status')], 2)
         self.setSortingEnabled(True)
-        self.header().setResizeMode(1, QHeaderView.Interactive)
+        self.header().setSectionResizeMode(1, QHeaderView.Interactive)
         self.setColumnWidth(1, 200)
 
     def on_update(self):

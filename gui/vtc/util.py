@@ -396,7 +396,7 @@ class MyTreeWidget(QTreeWidget):
         self.header().setStretchLastSection(False)
         for col in range(len(headers)):
             sm = QHeaderView.Stretch if col == self.stretch_column else QHeaderView.ResizeToContents
-            self.header().setResizeMode(col, sm)
+            self.header().setSectionResizeMode(col, sm)
 
     def editItem(self, item, column):
         if column in self.editable_columns:

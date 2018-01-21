@@ -25,13 +25,14 @@
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from qrtextedit import ScanQRTextEdit
+from PyQt5.QtWidgets import *
+from .qrtextedit import ScanQRTextEdit
 
 import re
 from decimal import Decimal
 from electrum_vtc import bitcoin
 
-import util
+from . import util
 
 RE_ADDRESS = '[1-9A-HJ-NP-Za-km-z]{26,}'
 RE_ALIAS = '(.*?)\s*\<([1-9A-HJ-NP-Za-km-z]{26,})\>'

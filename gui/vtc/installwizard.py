@@ -224,11 +224,11 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                     self.storage.decrypt(password)
                     break
                 except InvalidPassword as e:
-                    QMessageBox.information(None, _('Error'), str(e), _('OK'))
+                    QMessageBox.information(None, _('Error'), str(e), QMessageBox.Ok)
                     continue
                 except BaseException as e:
                     traceback.print_exc(file=sys.stdout)
-                    QMessageBox.information(None, _('Error'), str(e), _('OK'))
+                    QMessageBox.information(None, _('Error'), str(e), QMessageBox.Ok)
                     return
 
         path = self.storage.path
@@ -429,7 +429,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.run(action)
 
     def terminate(self):
-        self.emit(QtCore.SIGNAL('accept'))
+        self.accept_signal.emit()
 
     def waiting_dialog(self, task, msg):
         self.please_wait.setText(MSG_GENERATING_WAIT)

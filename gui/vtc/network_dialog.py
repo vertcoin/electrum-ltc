@@ -118,8 +118,8 @@ class NodesListWidget(QTreeWidget):
 
         h = self.header()
         h.setStretchLastSection(False)
-        h.setResizeMode(0, QHeaderView.Stretch)
-        h.setResizeMode(1, QHeaderView.ResizeToContents)
+        h.setSectionResizeMode(0, QHeaderView.Stretch)
+        h.setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
 
 class ServerListWidget(QTreeWidget):
@@ -172,8 +172,8 @@ class ServerListWidget(QTreeWidget):
 
         h = self.header()
         h.setStretchLastSection(False)
-        h.setResizeMode(0, QHeaderView.Stretch)
-        h.setResizeMode(1, QHeaderView.ResizeToContents)
+        h.setSectionResizeMode(0, QHeaderView.Stretch)
+        h.setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
 
 class NetworkChoiceLayout(object):

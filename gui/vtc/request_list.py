@@ -30,7 +30,7 @@ from electrum_vtc.plugins import run_hook
 from electrum_vtc.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from util import MyTreeWidget, pr_tooltips, pr_icons
+from .util import MyTreeWidget, pr_tooltips, pr_icons
 
 
 class RequestList(MyTreeWidget):
