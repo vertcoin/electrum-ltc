@@ -73,7 +73,7 @@ class NodesListWidget(QTreeWidget):
         is_server = not bool(item.data(0, Qt.UserRole).toInt()[0])
         menu = QMenu()
         if is_server:
-            server = item.data(1, Qt.UserRole).toString()
+            server = item.data(1, Qt.UserRole)
             menu.addAction(_("Use as server"), lambda: self.parent.follow_server(server))
         else:
             index = item.data(1, Qt.UserRole).toInt()[0]
@@ -136,7 +136,7 @@ class ServerListWidget(QTreeWidget):
         if not item:
             return
         menu = QMenu()
-        server = item.data(1, Qt.UserRole).toString()
+        server = item.data(1, Qt.UserRole)
         menu.addAction(_("Use as server"), lambda: self.set_server(server))
         menu.exec_(self.viewport().mapToGlobal(position))
 

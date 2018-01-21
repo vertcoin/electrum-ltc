@@ -95,6 +95,16 @@ from electrum_vtc.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIR
 
 class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
+    payment_request_ok_signal = pyqtSignal()
+    payment_request_error_signal = pyqtSignal()
+    notify_transactions_signal = pyqtSignal()
+    new_fx_quotes_signal = pyqtSignal()
+    new_fx_history_signal = pyqtSignal()
+    network_signal = pyqtSignal(str, object)
+    alias_received_signal = pyqtSignal()
+    computing_privkeys_signal = pyqtSignal()
+    show_privkeys_signal = pyqtSignal()
+
     def __init__(self, gui_object, wallet):
         QMainWindow.__init__(self)
 
@@ -168,13 +178,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         for i in range(wrtabs.count()):
             QShortcut(QKeySequence("Alt+" + str(i + 1)), self, lambda i=i: wrtabs.setCurrentIndex(i))
 
-        self.connect(self, QtCore.SIGNAL('payment_request_ok'), self.payment_request_ok)
-        self.connect(self, QtCore.SIGNAL('payment_request_error'), self.payment_request_error)
+        self.payment_request_ok_signal.connect(self.payment_request_ok)
+        self.payment_request_error_signal.connect(self.payment_request_error)
         self.history_list.setFocus(True)
 
         # network callbacks
         if self.network:
-            self.connect(self, QtCore.SIGNAL('network'), self.on_network_qt)
+            self.network_signal.connect(self.on_network_qt)
             interests = ['updated', 'new_transaction', 'status',
                          'banner', 'verified', 'fee']
             # To avoid leaking references to "self" that prevent the
@@ -186,8 +196,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.console.showMessage(self.network.banner)
             self.network.register_callback(self.on_quotes, ['on_quotes'])
             self.network.register_callback(self.on_history, ['on_history'])
-            self.connect(self, SIGNAL('new_fx_quotes'), self.on_fx_quotes)
-            self.connect(self, SIGNAL('new_fx_history'), self.on_fx_history)
+            self.new_fx_quotes_signal.connect(self.on_fx_quotes)
+            self.new_fx_history_signal.connect(self.on_fx_history)
 
         # update fee slider in case we missed the callback
         self.fee_slider.update()
@@ -200,14 +210,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return w
 
     def on_history(self, b):
-        self.emit(SIGNAL('new_fx_history'))
+        self.new_fx_history_signal.emit()
 
     def on_fx_history(self):
         self.history_list.refresh_headers()
         self.history_list.update()
 
     def on_quotes(self, b):
-        self.emit(SIGNAL('new_fx_quotes'))
+        self.new_fx_quotes_signal.emit()
 
     def on_fx_quotes(self):
         self.update_status()
@@ -279,17 +289,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def on_network(self, event, *args):
         if event == 'updated':
             self.need_update.set()
-            self.emit(QtCore.SIGNAL('updated'), event, *args)
+            self.gui_object.network_updated_signal_obj.network_updated_signal \
+                .emit(event, args)
 
         elif event == 'new_transaction':
             self.tx_notifications.append(args[0])
         elif event in ['status', 'banner', 'verified', 'fee']:
             # Handle in GUI thread
-            self.emit(QtCore.SIGNAL('network'), event, *args)
+            self.network_signal.emit(event, args)
         else:
             self.print_error("unexpected network message:", event, args)
 
-    def on_network_qt(self, event, *args):
+    def on_network_qt(self, event, args=None):
         # Handle a network message in the GUI thread
         if event == 'status':
             self.update_status()
@@ -311,7 +322,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             alias = str(alias)
             def f():
                 self.alias_info = self.contacts.resolve_openalias(alias)
-                self.emit(SIGNAL('alias_received'))
+                self.alias_received_signal.emit()
             t = threading.Thread(target=f)
             t.setDaemon(True)
             t.start()
@@ -361,7 +372,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def watching_only_changed(self):
         title = 'Electrum-VTC %s  -  %s' % (self.wallet.electrum_version,
-                                            self.wallet.basename().decode('utf8'))
+                                            self.wallet.basename())
         extra = [self.wallet.storage.get('wallet_type', '?')]
         if self.wallet.is_watching_only():
             self.warn_if_watching_only()
@@ -406,7 +417,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
 
     def update_recently_visited(self, filename):
-        filename = filename.decode('utf8')
         recent = self.config.get('recently_open', [])
         try:
             sorted(recent)
@@ -592,7 +602,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return fileName
 
     def connect_slots(self, sender):
-        self.connect(sender, QtCore.SIGNAL('timersignal'), self.timer_actions)
+        sender.timer_signal.connect(self.timer_actions)
 
     def timer_actions(self):
         # Note this runs in the GUI thread
@@ -706,7 +716,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             text = _("Not connected")
             icon = QIcon(":icons/status_disconnected.png")
 
-        self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename().decode('utf8')))
+        self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         self.balance_label.setText(text)
         self.status_button.setIcon( icon )
 
@@ -1505,9 +1515,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def on_pr(self, request):
         self.payment_request = request
         if self.payment_request.verify(self.contacts):
-            self.emit(SIGNAL('payment_request_ok'))
+            self.payment_request_ok_signal.emit()
         else:
-            self.emit(SIGNAL('payment_request_error'))
+            self.payment_request_error_signal.emit()
 
     def pay_to_URI(self, URI):
         if not URI:
@@ -2053,7 +2063,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         # else if the user scanned an offline signed tx
         # transactions are binary, but qrcode seems to return utf8...
-        data = data.decode('utf8')
+        data = data
         z = bitcoin.base_decode(data, length=None, base=43)
         data = ''.join(chr(ord(b)) for b in z).encode('hex')
         tx = self.tx_from_text(data)
@@ -2489,7 +2499,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             if alias:
                 self.fetch_alias()
         set_alias_color()
-        self.connect(self, SIGNAL('alias_received'), set_alias_color)
+        self.alias_received_signal.connect(set_alias_color)
         alias_e.editingFinished.connect(on_alias_edit)
         id_widgets.append((alias_label, alias_e))
 
@@ -2572,7 +2582,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         msg = _("Install the zbar package to enable this.")
         qr_label = HelpLabel(_('Video Device') + ':', msg)
         qr_combo.setEnabled(qrscanner.libzbar is not None)
-        on_video_device = lambda x: self.config.set_key("video_device", str(qr_combo.itemData(x).toString()), True)
+        on_video_device = lambda x: self.config.set_key("video_device", qr_combo.itemData(x), True)
         qr_combo.currentIndexChanged.connect(on_video_device)
         gui_widgets.append((qr_label, qr_combo))
 

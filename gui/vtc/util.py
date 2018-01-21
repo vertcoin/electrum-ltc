@@ -461,7 +461,7 @@ class MyTreeWidget(QTreeWidget):
 
     def on_edited(self, item, column, prior):
         '''Called only when the text actually changes'''
-        key = str(item.data(0, Qt.UserRole).toString())
+        key = str(item.data(0, Qt.UserRole))
         text = item.text(column)
         self.parent.wallet.set_label(key, text)
         self.parent.history_list.update_labels()

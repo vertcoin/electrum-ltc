@@ -43,7 +43,7 @@ class AddressList(MyTreeWidget):
     def on_update(self):
         self.wallet = self.parent.wallet
         item = self.currentItem()
-        current_address = item.data(0, Qt.UserRole).toString() if item else None
+        current_address = item.data(0, Qt.UserRole) if item else None
         self.clear()
         receiving_addresses = self.wallet.get_receiving_addresses()
         change_addresses = self.wallet.get_change_addresses()

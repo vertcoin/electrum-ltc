@@ -68,7 +68,7 @@ class InvoiceList(MyTreeWidget):
     def create_menu(self, position):
         menu = QMenu()
         item = self.itemAt(position)
-        key = str(item.data(0, 32).toString())
+        key = str(item.data(0, 32))
         column = self.currentColumn()
         column_title = self.headerItem().text(column)
         column_data = item.text(column)
