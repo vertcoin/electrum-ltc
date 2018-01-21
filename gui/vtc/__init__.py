@@ -77,6 +77,9 @@ class OpenFileEventFilter(QObject):
         return False
 
 
+class QElectrumApplication(QApplication):
+    new_window_signal = pyqtSignal(str, object)
+
 
 class ElectrumGui:
 
@@ -91,7 +94,8 @@ class ElectrumGui:
         self.plugins = plugins
         self.windows = []
         self.efilter = OpenFileEventFilter(self.windows)
-        self.app = QApplication(sys.argv)
+        self.app = QElectrumApplication(sys.argv)
+        self.app.installEventFilter(self.efilter)
         QFontDatabase.addApplicationFont(":fonts/SourceSansPro-Regular.otf")
         QFontDatabase.addApplicationFont(":fonts/SourceCodePro-Regular.otf")
         self.init_stylesheet()
@@ -105,7 +109,7 @@ class ElectrumGui:
         self.tray.activated.connect(self.tray_activated)
         self.build_tray_menu()
         self.tray.show()
-        self.app.connect(self.app, QtCore.SIGNAL('new_window'), self.start_new_window)
+        self.app.new_window_signal.connect(self.start_new_window)
         run_hook('init_qt', self)
 
     def init_stylesheet(self):

@@ -123,7 +123,7 @@ class QtHandlerBase(QObject, PrintError):
             vbox.addWidget(pw)
             vbox.addLayout(Buttons(CancelButton(d), OkButton(d)))
             d.setLayout(vbox)
-            passphrase = unicode(pw.text()) if d.exec_() else None
+            passphrase = pw.text() if d.exec_() else None
         self.passphrase = passphrase
         self.done.set()
 
@@ -137,7 +137,7 @@ class QtHandlerBase(QObject, PrintError):
         hbox.addWidget(text)
         hbox.addStretch(1)
         dialog.exec_()  # Firmware cannot handle cancellation
-        self.word = unicode(text.text())
+        self.word = text.text()
         self.done.set()
 
     def message_dialog(self, msg, on_cancel):

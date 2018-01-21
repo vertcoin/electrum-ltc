@@ -135,7 +135,7 @@ class SeedLayout(QVBoxLayout):
         self.addWidget(self.seed_warning)
 
     def get_seed(self):
-        text = unicode(self.seed_e.text())
+        text = self.seed_e.text()
         return ' '.join(text.split())
 
     def on_edit(self):
@@ -166,7 +166,7 @@ class KeysLayout(QVBoxLayout):
         self.addWidget(self.text_e)
 
     def get_text(self):
-        return unicode(self.text_e.text())
+        return self.text_e.text()
 
     def on_edit(self):
         b = self.is_valid(self.get_text())

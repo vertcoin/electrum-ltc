@@ -65,7 +65,7 @@ class Console(QtGui.QPlainTextEdit):
 
     def getCommand(self):
         doc = self.document()
-        curr_line = unicode(doc.findBlockByLineNumber(doc.lineCount() - 1).text())
+        curr_line = doc.findBlockByLineNumber(doc.lineCount() - 1).text()
         curr_line = curr_line.rstrip()
         curr_line = curr_line[len(self.prompt):]
         return curr_line
@@ -75,7 +75,7 @@ class Console(QtGui.QPlainTextEdit):
             return
 
         doc = self.document()
-        curr_line = unicode(doc.findBlockByLineNumber(doc.lineCount() - 1).text())
+        curr_line = doc.findBlockByLineNumber(doc.lineCount() - 1).text()
         self.moveCursor(QtGui.QTextCursor.End)
         for i in range(len(curr_line) - len(self.prompt)):
             self.moveCursor(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor)

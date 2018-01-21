@@ -175,7 +175,7 @@ class PayToEdit(ScanQRTextEdit):
         return self.outputs[:]
 
     def lines(self):
-        return unicode(self.toPlainText()).split('\n')
+        return self.toPlainText().split('\n')
 
     def is_multiline(self):
         return len(self.lines()) > 1

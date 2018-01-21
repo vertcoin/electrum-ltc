@@ -73,7 +73,7 @@ class NodesListWidget(QTreeWidget):
         is_server = not bool(item.data(0, Qt.UserRole).toInt()[0])
         menu = QMenu()
         if is_server:
-            server = unicode(item.data(1, Qt.UserRole).toString())
+            server = item.data(1, Qt.UserRole).toString()
             menu.addAction(_("Use as server"), lambda: self.parent.follow_server(server))
         else:
             index = item.data(1, Qt.UserRole).toInt()[0]
@@ -136,7 +136,7 @@ class ServerListWidget(QTreeWidget):
         if not item:
             return
         menu = QMenu()
-        server = unicode(item.data(1, Qt.UserRole).toString())
+        server = item.data(1, Qt.UserRole).toString()
         menu.addAction(_("Use as server"), lambda: self.set_server(server))
         menu.exec_(self.viewport().mapToGlobal(position))
 
@@ -379,7 +379,7 @@ class NetworkChoiceLayout(object):
 
     def change_protocol(self, use_ssl):
         p = 's' if use_ssl else 't'
-        host = unicode(self.server_host.text())
+        host = self.server_host.text()
         pp = self.servers.get(host, bitcoin.NetworkConstants.DEFAULT_PORTS)
         if p not in pp.keys():
             p = pp.keys()[0]
