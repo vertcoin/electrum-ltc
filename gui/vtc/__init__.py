@@ -172,7 +172,7 @@ class ElectrumGui:
         self.app.new_window_signal.emit(path, uri)
 
     def show_network_dialog(self, parent):
-        from network_dialog import NetworkDialog
+        from .network_dialog import NetworkDialog
         if not self.daemon.network:
             parent.show_warning(_('You are using Electrum in offline mode; restart Electrum if you want to get connected'), title=_('Offline'))
             return
@@ -181,7 +181,8 @@ class ElectrumGui:
             self.nd.show()
             self.nd.raise_()
             return
-        self.nd = NetworkDialog(self.daemon.network, self.config)
+        self.nd = NetworkDialog(self.daemon.network, self.config,
+                                self.network_updated_signal_obj)
         self.nd.show()
 
     def create_window_for_wallet(self, wallet):
