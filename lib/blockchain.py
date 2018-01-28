@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Electrum - lightweight Bitcoin client
 # Copyright (C) 2012 thomasv@ecdsa.org
 #
@@ -22,27 +20,19 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
-
 import os
-from . import util
 import threading
-import binascii
 
+from . import util
 from . import bitcoin
 from .bitcoin import *
 
-from .util import bh2u
+from .util import bh2u, bfh
 
 import lyra2re_hash
 import lyra2re2_hash
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-
-hex_encode = bh2u
-
-hex_decode = binascii.unhexlify
 
 def serialize_header(res):
     s = int_to_hex(res.get('version'), 4) \
@@ -54,7 +44,7 @@ def serialize_header(res):
     return s
 
 def deserialize_header(s, height):
-    hex_to_int = lambda s: int('0x' + hex_encode(s[::-1]), 16)
+    hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
     h = {}
     h['version'] = hex_to_int(s[0:4])
     h['prev_block_hash'] = hash_encode(s[4:36])
@@ -98,7 +88,9 @@ def can_connect(header):
 
 class Blockchain(util.PrintError):
 
-    '''Manages blockchain headers and their verification'''
+    """
+    Manages blockchain headers and their verification
+    """
 
     def __init__(self, config, checkpoint, parent_id):
         self.config = config
@@ -113,7 +105,7 @@ class Blockchain(util.PrintError):
         return blockchains[self.parent_id]
 
     def get_max_child(self):
-        children = filter(lambda y: y.parent_id==self.checkpoint, blockchains.values())
+        children = list(filter(lambda y: y.parent_id==self.checkpoint, blockchains.values()))
         return max([x.checkpoint for x in children]) if children else None
 
     def get_checkpoint(self):
@@ -155,7 +147,7 @@ class Blockchain(util.PrintError):
         _powhash = self.pow_hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-        if NetworkConstants.TESTNET:
+        if bitcoin.NetworkConstants.TESTNET:
             return
         if bits != header.get('bits'):
             raise BaseException("bits mismatch: %s vs %s for height %s" % (bits, header.get('bits'), header.get('block_height')))
@@ -187,7 +179,7 @@ class Blockchain(util.PrintError):
         return s
 
     def deserialize_header(self, s, height):
-        hex_to_int = lambda s: int('0x' + hex_encode(s[::-1]), 16)
+        hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
         h = {}
         h['version'] = hex_to_int(s[0:4])
         h['prev_block_hash'] = hash_encode(s[4:36])
@@ -201,17 +193,17 @@ class Blockchain(util.PrintError):
     def hash_header(self, header):
         if header is None:
             return '0' * 64
-        return hash_encode(Hash(hex_decode(self.serialize_header(header))))
+        return hash_encode(Hash(bfh(self.serialize_header(header))))
 
     def pow_hash_header(self, header):
         height = header.get('block_height')
         if height >= 347000:
-            return rev_hex(hex_encode(lyra2re2_hash.getPoWHash(hex_decode(self.serialize_header(header)))))
+            return rev_hex(bh2u(lyra2re2_hash.getPoWHash(bfh(self.serialize_header(header)))))
         elif height >= 208301:
-            return rev_hex(hex_encode(lyra2re_hash.getPoWHash(hex_decode(self.serialize_header(header)))))
+            return rev_hex(bh2u(lyra2re_hash.getPoWHash(bfh(self.serialize_header(header)))))
         else:
             import vtc_scrypt
-            return rev_hex(hex_encode(vtc_scrypt.getPoWHash(hex_decode(self.serialize_header(header)))))
+            return rev_hex(bh2u(vtc_scrypt.getPoWHash(bfh(self.serialize_header(header)))))
 
     def path(self):
         d = util.get_headers_dir(self.config)
@@ -276,7 +268,7 @@ class Blockchain(util.PrintError):
 
     def save_header(self, header):
         delta = header.get('block_height') - self.checkpoint
-        data = hex_decode(serialize_header(header))
+        data = bfh(serialize_header(header))
         assert delta == self.size()
         assert len(data) == 80
         self.write(data, delta*80)
@@ -419,7 +411,7 @@ class Blockchain(util.PrintError):
         return new_bits, new_target
 
     def get_target(self, height, chain={}):
-        if NetworkConstants.TESTNET:
+        if bitcoin.NetworkConstants.TESTNET:
             return 0, 0
         if height == 0 or height == 208301:
             return 0x1e0ffff0, 0x00000FFFF0000000000000000000000000000000000000000000000000000000
@@ -488,7 +480,7 @@ class Blockchain(util.PrintError):
 
     def connect_chunk(self, idx, hexdata):
         try:
-            data = hex_decode(hexdata)
+            data = bfh(hexdata)
             self.verify_chunk(idx, data)
             #self.print_error("validated chunk %d" % idx)
             self.save_chunk(idx, data)
