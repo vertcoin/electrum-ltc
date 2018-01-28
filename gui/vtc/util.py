@@ -427,13 +427,12 @@ class MyTreeWidget(QTreeWidget):
         # on 'enter' we show the menu
         pt = self.visualItemRect(item).bottomLeft()
         pt.setX(50)
-        self.emit(SIGNAL('customContextMenuRequested(const QPoint&)'), pt)
+        self.customContextMenuRequested.emit(pt)
 
     def createEditor(self, parent, option, index):
         self.editor = QStyledItemDelegate.createEditor(self.itemDelegate(),
                                                        parent, option, index)
-        self.editor.connect(self.editor, SIGNAL("editingFinished()"),
-                            self.editing_finished)
+        self.editor.editingFinished.connect(self.editing_finished)
         return self.editor
 
     def editing_finished(self):
