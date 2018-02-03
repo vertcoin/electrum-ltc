@@ -208,6 +208,13 @@ class TrezorClientBase(GuiMixin, PrintError):
         f = self.features
         return (f.major_version, f.minor_version, f.patch_version)
 
+    def supports_coin(self, coin_name):
+        f = self.features
+        for coin in f.coins:
+            if coin.coin_name == coin_name:
+                return True
+        return False
+
     def atleast_version(self, major, minor=0, patch=0):
         return cmp(self.firmware_version(), (major, minor, patch)) >= 0
 
