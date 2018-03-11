@@ -163,17 +163,19 @@ class Blockchain(util.PrintError):
         p = self.path()
         self._size = os.path.getsize(p)//80 if os.path.exists(p) else 0
 
-    def verify_header(self, header, prev_hash, bits, target):
+    def verify_header(self, header, prev_hash, bits, target, check_bits_target=True):
         _hash = hash_header(header)
-        _powhash = pow_hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
         if constants.net.TESTNET:
             return
-        if bits != header.get('bits'):
-            raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
-        if int('0x' + _powhash, 16) > target:
-            raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _powhash, 16), target))
+        if check_bits_target:
+            if bits != header.get('bits'):
+                raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+            
+            _powhash = pow_hash_header(header)
+            if int('0x' + _powhash, 16) > target:
+                raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _powhash, 16), target))
 
     def verify_chunk(self, index, data):
         num = len(data) // 80
@@ -183,8 +185,15 @@ class Blockchain(util.PrintError):
             raw_header = data[i*80:(i+1) * 80]
             header = deserialize_header(raw_header, index*2016 + i)
             headers[header.get('block_height')] = header
-            bits, target = self.get_target(index * 2016 + i, headers)
-            self.verify_header(header, prev_hash, bits, target)
+
+            bits = 0
+            target = 0
+            check_bits_target = (index > len(self.checkpoints)) or \
+                (index < len(self.checkpoints) and i % 2016==0)
+            if check_bits_target:
+                bits, target = self.get_target(index * 2016 + i, headers)
+
+            self.verify_header(header, prev_hash, bits, target, check_bits_target)
             prev_hash = hash_header(header)
 
     def path(self):
@@ -283,7 +292,7 @@ class Blockchain(util.PrintError):
         elif height < len(self.checkpoints) * 2016:
             assert (height+1) % 2016 == 0, height
             index = height // 2016
-            h, t = self.checkpoints[index]
+            h, _, _, _ = self.checkpoints[index]
             return h
         else:
             return hash_header(self.read_header(height))
@@ -400,6 +409,10 @@ class Blockchain(util.PrintError):
             bitsN = (bits >> 24) & 0xff
             target = bitsBase << (8 * (bitsN - 3))
             return bits, target 
+        index = height // 2016
+        if index < len(self.checkpoints) and (height % 2016 == 0):
+            _, t, b, _ = self.checkpoints[index]
+            return b, t
         if height < 26754:
             # Litecoin: go back the full period unless it's the first retarget
             first = self.read_header((height - 2016 - 1 if height > 2016 else 0))
@@ -474,6 +487,6 @@ class Blockchain(util.PrintError):
         n = self.height() // 2016
         for index in range(n):
             h = self.get_hash((index+1) * 2016 -1)
-            target = self.get_target(index)
-            cp.append((h, target))
+            bits, target = self.get_target(index * 2016)
+            cp.append((h, target, bits, index))
         return cp
