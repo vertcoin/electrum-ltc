@@ -163,8 +163,7 @@ class Blockchain(util.PrintError):
         p = self.path()
         self._size = os.path.getsize(p)//80 if os.path.exists(p) else 0
 
-    def verify_header(self, header, prev_header, bits, target):
-        prev_hash = hash_header(prev_header)
+    def verify_header(self, header, prev_hash, bits, target):
         _hash = hash_header(header)
         _powhash = pow_hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
@@ -178,17 +177,15 @@ class Blockchain(util.PrintError):
 
     def verify_chunk(self, index, data):
         num = len(data) // 80
-        prev_header = None
-        if index != 0:
-            prev_header = self.read_header(index * 2016 - 1)
+        prev_hash = self.get_hash(index * 2016 - 1)
         headers = {}
         for i in range(num):
             raw_header = data[i*80:(i+1) * 80]
             header = deserialize_header(raw_header, index*2016 + i)
             headers[header.get('block_height')] = header
             bits, target = self.get_target(index * 2016 + i, headers)
-            self.verify_header(header, prev_header, bits, target)
-            prev_header = header
+            self.verify_header(header, prev_hash, bits, target)
+            prev_hash = hash_header(header)
 
     def path(self):
         d = util.get_headers_dir(self.config)
@@ -395,7 +392,7 @@ class Blockchain(util.PrintError):
     def get_target(self, height, chain={}):
         if constants.net.TESTNET:
             return 0, 0
-        if height == 0 or height == 208301:
+        if height <= 0 or height == 208301:
             return 0x1e0ffff0, 0x00000FFFF0000000000000000000000000000000000000000000000000000000
         if height == 468741:
             bits = 469820683
@@ -455,7 +452,7 @@ class Blockchain(util.PrintError):
             return False
         bits, target = self.get_target(height)
         try:
-            self.verify_header(header, previous_header, bits, target)
+            self.verify_header(header, prev_hash, bits, target)
         except BaseException as e:
             return False
         return True
