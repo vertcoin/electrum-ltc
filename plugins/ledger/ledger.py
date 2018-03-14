@@ -181,7 +181,7 @@ class Ledger_Client():
                 self.perform_hw1_preflight()
             except BTChipException as e:
                 if (e.sw == 0x6d00):
-                    raise BaseException("Device not in Bitcoin mode")
+                    raise BaseException("Device not in Vertcoin mode")
                 raise e
             self.preflightDone = True
 
