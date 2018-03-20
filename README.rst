@@ -5,8 +5,9 @@ Electrum - Lightweight Vertcoin client
 
   Licence: MIT Licence
   Author: Thomas Voegtlin
+  Port Maintainer: pknight
   Language: Python
-  Homepage: https://electrum.org/
+  Homepage: https://electrum.vertcoin.org/
 
 
 .. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
