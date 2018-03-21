@@ -23,8 +23,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from electrum.i18n import _
-from electrum.util import format_time
+from electrum_vtc.i18n import _
+from electrum_vtc.util import format_time
 
 from .util import *
 

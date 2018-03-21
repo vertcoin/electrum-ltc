@@ -1,5 +1,5 @@
 import select, time, queue
-# import electrum
+# import electrum_vtc
 from electrum_vtc import Connection, Interface, SimpleConfig
 
 from electrum_vtc.network import parse_servers

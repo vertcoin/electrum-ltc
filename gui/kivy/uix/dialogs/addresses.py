@@ -93,8 +93,8 @@ Builder.load_string('''
 ''')
 
 
-from electrum_gui.kivy.i18n import _
-from electrum_gui.kivy.uix.context_menu import ContextMenu
+from electrum_vtc_gui.kivy.i18n import _
+from electrum_vtc_gui.kivy.uix.context_menu import ContextMenu
 
 
 class EmptyLabel(Factory.Label):

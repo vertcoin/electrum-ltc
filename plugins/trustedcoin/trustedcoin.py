@@ -30,18 +30,18 @@ import json
 from urllib.parse import urljoin
 from urllib.parse import quote
 
-import electrum
-from electrum import bitcoin
-from electrum import constants
-from electrum import keystore
-from electrum.bitcoin import *
-from electrum.mnemonic import Mnemonic
-from electrum import version
-from electrum.wallet import Multisig_Wallet, Deterministic_Wallet
-from electrum.i18n import _
-from electrum.plugins import BasePlugin, hook
-from electrum.util import NotEnoughFunds
-from electrum.storage import STO_EV_USER_PW
+import electrum_vtc
+from electrum_vtc import bitcoin
+from electrum_vtc import constants
+from electrum_vtc import keystore
+from electrum_vtc.bitcoin import *
+from electrum_vtc.mnemonic import Mnemonic
+from electrum_vtc import version
+from electrum_vtc.wallet import Multisig_Wallet, Deterministic_Wallet
+from electrum_vtc.i18n import _
+from electrum_vtc.plugins import BasePlugin, hook
+from electrum_vtc.util import NotEnoughFunds
+from electrum_vtc.storage import STO_EV_USER_PW
 
 # signing_xpub is hardcoded so that the wallet can be restored from seed, without TrustedCoin's server
 def get_signing_xpub():
@@ -386,8 +386,8 @@ class TrustedCoinPlugin(BasePlugin):
 
     @classmethod
     def get_xkeys(self, seed, passphrase, derivation):
-        from electrum.mnemonic import Mnemonic
-        from electrum.keystore import bip32_root, bip32_private_derivation
+        from electrum_vtc.mnemonic import Mnemonic
+        from electrum_vtc.keystore import bip32_root, bip32_private_derivation
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
         xprv, xpub = bip32_root(bip32_seed, 'standard')
         xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)

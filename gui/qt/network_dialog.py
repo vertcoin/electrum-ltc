@@ -30,10 +30,10 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 import PyQt5.QtCore as QtCore
 
-from electrum.i18n import _
-from electrum import constants
-from electrum.util import print_error
-from electrum.network import serialize_server, deserialize_server
+from electrum_vtc.i18n import _
+from electrum_vtc import constants
+from electrum_vtc.util import print_error
+from electrum_vtc.network import serialize_server, deserialize_server
 
 from .util import *
 
