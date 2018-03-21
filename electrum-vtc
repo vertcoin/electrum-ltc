@@ -82,9 +82,9 @@ if not is_android:
 # load local module as electrum
 if is_local or is_android:
     import imp
-    imp.load_module('electrum', *imp.find_module('lib'))
-    imp.load_module('electrum_gui', *imp.find_module('gui'))
-    imp.load_module('electrum_plugins', *imp.find_module('plugins'))
+    imp.load_module('electrum_vtc', *imp.find_module('lib'))
+    imp.load_module('electrum_vtc_gui', *imp.find_module('gui'))
+    imp.load_module('electrum_vtc_plugins', *imp.find_module('plugins'))
 
 
 
