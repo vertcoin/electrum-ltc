@@ -3,10 +3,10 @@
 
 [Desktop Entry]
 Comment=Lightweight Vertcoin Client
-Exec=electrum %u
+Exec=electrum-vtc %u
 GenericName[en_US]=Vertcoin Wallet
 GenericName=Vertcoin Wallet
-Icon=electrum
+Icon=electrum-vtc
 Name[en_US]=Electrum Vertcoin Wallet
 Name=Electrum Vertcoin Wallet
 Categories=Finance;Network;

@@ -34,39 +34,39 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         else:
             usr_share = os.path.expanduser('~/.local/share')
     data_files += [
-        (os.path.join(usr_share, 'applications/'), ['electrum.desktop']),
-        (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum.png'])
+        (os.path.join(usr_share, 'applications/'), ['electrum-vtc.desktop']),
+        (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum-vtc.png'])
     ]
 
 setup(
-    name="Electrum",
+    name="Electrum-VTC",
     version=version.ELECTRUM_VERSION,
     install_requires=requirements,
     packages=[
-        'electrum',
-        'electrum_gui',
-        'electrum_gui.qt',
-        'electrum_plugins',
-        'electrum_plugins.audio_modem',
-        'electrum_plugins.cosigner_pool',
-        'electrum_plugins.email_requests',
-        'electrum_plugins.greenaddress_instant',
-        'electrum_plugins.hw_wallet',
-        'electrum_plugins.keepkey',
-        'electrum_plugins.labels',
-        'electrum_plugins.ledger',
-        'electrum_plugins.trezor',
-        'electrum_plugins.digitalbitbox',
-        'electrum_plugins.trustedcoin',
-        'electrum_plugins.virtualkeyboard',
+        'electrum_vtc',
+        'electrum_vtc_gui',
+        'electrum_vtc_gui.qt',
+        'electrum_vtc_plugins',
+        'electrum_vtc_plugins.audio_modem',
+        'electrum_vtc_plugins.cosigner_pool',
+        'electrum_vtc_plugins.email_requests',
+        'electrum_vtc_plugins.greenaddress_instant',
+        'electrum_vtc_plugins.hw_wallet',
+        'electrum_vtc_plugins.keepkey',
+        'electrum_vtc_plugins.labels',
+        'electrum_vtc_plugins.ledger',
+        'electrum_vtc_plugins.trezor',
+        'electrum_vtc_plugins.digitalbitbox',
+        'electrum_vtc_plugins.trustedcoin',
+        'electrum_vtc_plugins.virtualkeyboard',
     ],
     package_dir={
-        'electrum': 'lib',
-        'electrum_gui': 'gui',
-        'electrum_plugins': 'plugins',
+        'electrum_vtc': 'lib',
+        'electrum_vtc_gui': 'gui',
+        'electrum_vtc_plugins': 'plugins',
     },
     package_data={
-        'electrum': [
+        'electrum_vtc': [
             'servers.json',
             'servers_testnet.json',
             'currencies.json',
@@ -77,13 +77,13 @@ setup(
             'locale/*/LC_MESSAGES/electrum.mo',
         ]
     },
-    scripts=['electrum'],
+    scripts=['electrum-vtc'],
     data_files=data_files,
     description="Lightweight Vertcoin Wallet",
-    author="Thomas Voegtlin",
-    author_email="thomasv@electrum.org",
+    author="pknight",
+    author_email="pknight@vertcoin.org",
     license="MIT Licence",
-    url="https://electrum.org",
+    url="https://electrum.vertcoin.org/",
     long_description="""Lightweight Vertcoin Wallet"""
 )
 
