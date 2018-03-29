@@ -1444,7 +1444,7 @@ class Abstract_Wallet(PrintError):
         xpubs = self.get_master_public_keys()
         for txout in tx.outputs():
             _type, addr, amount = txout
-            if self.is_change(addr):
+            if self.is_mine(addr):
                 index = self.get_address_index(addr)
                 pubkeys = self.get_public_keys(addr)
                 # sort xpubs using the order of pubkeys
@@ -1590,6 +1590,11 @@ class Abstract_Wallet(PrintError):
 
     def add_payment_request(self, req, config):
         addr = req['address']
+        if not bitcoin.is_address(addr):
+            raise Exception(_('Invalid Vertcoin address.'))
+        if not self.is_mine(addr):
+            raise Exception(_('Address not in wallet.'))
+
         amount = req.get('amount')
         message = req.get('memo')
         self.receive_requests[addr] = req
@@ -1611,7 +1616,7 @@ class Abstract_Wallet(PrintError):
                 f.write(pr.SerializeToString())
             # reload
             req = self.get_payment_request(addr, config)
-            with open(os.path.join(path, key + '.json'), 'w') as f:
+            with open(os.path.join(path, key + '.json'), 'w', encoding='utf-8') as f:
                 f.write(json.dumps(req))
         return req
 
@@ -1929,8 +1934,18 @@ class Imported_Wallet(Simple_Wallet):
         pubkey = self.get_public_key(address)
         self.addresses.pop(address)
         if pubkey:
-            self.keystore.delete_imported_key(pubkey)
-            self.save_keystore()
+            # delete key iff no other address uses it (e.g. p2pkh and p2wpkh for same key)
+            for txin_type in bitcoin.SCRIPT_TYPES.keys():
+                try:
+                    addr2 = bitcoin.pubkey_to_address(txin_type, pubkey)
+                except NotImplementedError:
+                    pass
+                else:
+                    if addr2 in self.addresses:
+                        break
+            else:
+                self.keystore.delete_imported_key(pubkey)
+                self.save_keystore()
         self.storage.put('addresses', self.addresses)
 
         self.storage.write()

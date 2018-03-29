@@ -187,7 +187,7 @@ class Ledger_Client():
             try:
                 self.perform_hw1_preflight()
             except BTChipException as e:
-                if (e.sw == 0x6d00 or e.sw == 0x6f00):
+                if (e.sw == 0x6d00 or e.sw == 0x6700):
                     raise BaseException(_("Device not in Vertcoin mode")) from e
                 raise e
             self.preflightDone = True
@@ -377,7 +377,8 @@ class Ledger_KeyStore(Hardware_KeyStore):
             for _type, address, amount in tx.outputs():
                 assert _type == TYPE_ADDRESS
                 info = tx.output_info.get(address)
-                if (info is not None) and (len(tx.outputs()) != 1):
+                if (info is not None) and len(tx.outputs()) > 1 \
+                        and info[0][0] == 1:  # "is on 'change' branch"
                     index, xpubs, m = info
                     changePath = self.get_derivation()[2:] + "/%d/%d"%index
                     changeAmount = amount
@@ -417,7 +418,12 @@ class Ledger_KeyStore(Hardware_KeyStore):
             if segwitTransaction:
                 self.get_client().startUntrustedTransaction(True, inputIndex,
                                                             chipInputs, redeemScripts[inputIndex])
-                outputData = self.get_client().finalizeInputFull(txOutput)
+                if changePath:
+                    # we don't set meaningful outputAddress, amount and fees
+                    # as we only care about the alternateEncoding==True branch
+                    outputData = self.get_client().finalizeInput(b'', 0, 0, changePath, bfh(rawTx))
+                else:
+                    outputData = self.get_client().finalizeInputFull(txOutput)
                 outputData['outputData'] = txOutput
                 transactionOutput = outputData['outputData']
                 if outputData['confirmationNeeded']:
@@ -440,7 +446,12 @@ class Ledger_KeyStore(Hardware_KeyStore):
                 while inputIndex < len(inputs):
                     self.get_client().startUntrustedTransaction(firstTransaction, inputIndex,
                                                             chipInputs, redeemScripts[inputIndex])
-                    outputData = self.get_client().finalizeInputFull(txOutput)
+                    if changePath:
+                        # we don't set meaningful outputAddress, amount and fees
+                        # as we only care about the alternateEncoding==True branch
+                        outputData = self.get_client().finalizeInput(b'', 0, 0, changePath, bfh(rawTx))
+                    else:
+                        outputData = self.get_client().finalizeInputFull(txOutput)
                     outputData['outputData'] = txOutput
                     if firstTransaction:
                         transactionOutput = outputData['outputData']
@@ -522,8 +533,15 @@ class LedgerPlugin(HW_PluginBase):
 
     def get_btchip_device(self, device):
         ledger = False
-        if (device.product_key[0] == 0x2581 and device.product_key[1] == 0x3b7c) or (device.product_key[0] == 0x2581 and device.product_key[1] == 0x4b7c) or (device.product_key[0] == 0x2c97):
-           ledger = True
+        if device.product_key[0] == 0x2581 and device.product_key[1] == 0x3b7c:
+            ledger = True
+        if device.product_key[0] == 0x2581 and device.product_key[1] == 0x4b7c:
+            ledger = True
+        if device.product_key[0] == 0x2c97:
+            if device.interface_number == 0 or device.usage_page == 0xffa0:
+                ledger = True
+            else:
+                return None  # non-compatible interface of a nano s or blue
         dev = hid.device()
         dev.open_path(device.path)
         dev.set_nonblocking(True)
