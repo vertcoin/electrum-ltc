@@ -3,7 +3,7 @@
 # Parameterize
 PYTHON_VERSION=3.6.4
 BUILDDIR=/tmp/electrum-build
-PACKAGE=Electrum
+PACKAGE=Electrum-VTC
 GIT_REPO=https://github.com/spesmilo/electrum
 
 . $(dirname "$0")/base.sh
