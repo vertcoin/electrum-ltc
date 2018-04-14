@@ -143,6 +143,22 @@ cp libusb/MS32/dll/libusb-1.0.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/
 #unzip -o upx.zip
 #cp upx*/upx.exe .
 
+# Install MinGW
+wget http://downloads.sourceforge.net/project/mingw/Installer/mingw-get-setup.exe
+wine mingw-get-setup.exe
+
+echo "add c:\MinGW\bin to PATH using regedit"
+echo "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+regedit
+
+wine mingw-get install gcc
+wine mingw-get install mingw-utils
+wine mingw-get install mingw32-libz
+
+printf "[build]\ncompiler=mingw32\n" > $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/distutils.cfg
+patch $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py -i $here/distutils.patch -o $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py
+cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/vcruntime140.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/libs/
+
 # add dlls needed for pyinstaller:
 cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/site-packages/PyQt5/Qt/bin/* $WINEPREFIX/drive_c/python$PYTHON_VERSION/
 

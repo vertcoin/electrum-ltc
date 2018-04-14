@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME_ROOT=electrum
+NAME_ROOT=electrum-vtc
 PYTHON_VERSION=3.5.4
 
 # These settings probably don't need any change
@@ -19,7 +19,17 @@ set -e
 mkdir -p tmp
 cd tmp
 
-for repo in electrum electrum-locale electrum-icons; do
+if [ -d electrum ]; then
+    cd electrum
+    git pull
+    git checkout master
+    cd ..
+else
+    URL=https://github.com/pknight007/electrum.git
+    git clone -b master $URL electrum
+fi
+
+for repo in electrum-locale electrum-icons; do
     if [ -d $repo ]; then
 	cd $repo
 	git pull
