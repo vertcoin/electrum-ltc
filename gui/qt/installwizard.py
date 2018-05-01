@@ -10,17 +10,13 @@ from PyQt5.QtWidgets import *
 
 from electrum_vtc import Wallet, WalletStorage
 from electrum_vtc.util import UserCancelled, InvalidPassword
-from electrum_vtc.base_wizard import BaseWizard, HWD_SETUP_DECRYPT_WALLET
+from electrum_vtc.base_wizard import BaseWizard, HWD_SETUP_DECRYPT_WALLET, GoBack
 from electrum_vtc.i18n import _
 
 from .seed_dialog import SeedLayout, KeysLayout
 from .network_dialog import NetworkChoiceLayout
 from .util import *
 from .password_dialog import PasswordLayout, PasswordLayoutForHW, PW_NEW
-
-
-class GoBack(Exception):
-    pass
 
 
 MSG_ENTER_PASSWORD = _("Choose a password to encrypt your wallet keys.") + '\n'\
@@ -348,7 +344,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         if not result and raise_on_cancel:
             raise UserCancelled
         if result == 1:
-            raise GoBack
+            raise GoBack from None
         self.title.setVisible(False)
         self.back_button.setEnabled(False)
         self.next_button.setEnabled(False)
@@ -441,7 +437,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
 
     def show_restore(self, wallet, network):
         # FIXME: these messages are shown after the install wizard is
-        # finished and the window closed.  On MacOSX they appear parented
+        # finished and the window closed.  On macOS they appear parented
         # with a re-appeared ghost install wizard window...
         if network:
             def task():
@@ -534,7 +530,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
             _("Please share it with your cosigners.")
         ])
         vbox = QVBoxLayout()
-        layout = SeedLayout(xpub, title=msg, icon=False)
+        layout = SeedLayout(xpub, title=msg, icon=False, for_seed_words=False)
         vbox.addLayout(layout.layout())
         self.exec_layout(vbox, _('Master Public Key'))
         return None

@@ -44,8 +44,8 @@ from electrum_vtc.bitcoin import COIN, is_address, TYPE_ADDRESS
 from electrum_vtc import constants
 from electrum_vtc.plugins import run_hook
 from electrum_vtc.i18n import _
-from electrum_vtc.util import (format_time, format_satoshis, PrintError,
-                           format_satoshis_plain, NotEnoughFunds,
+from electrum_vtc.util import (format_time, format_satoshis, format_fee_satoshis,
+                           format_satoshis_plain, NotEnoughFunds, PrintError,
                            UserCancelled, NoDynamicFeeEstimates, profiler,
                            export_meta, import_meta, bh2u, bfh, InvalidPassword)
 from electrum_vtc import Transaction
@@ -254,10 +254,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def pop_top_level_window(self, window):
         self.tl_windows.remove(window)
 
-    def top_level_window(self):
+    def top_level_window(self, test_func=None):
         '''Do the right thing in the presence of tx dialog windows'''
         override = self.tl_windows[-1] if self.tl_windows else None
-        return self.top_level_window_recurse(override)
+        if override and test_func and not test_func(override):
+            override = None  # only override if ok for test_func
+        return self.top_level_window_recurse(override, test_func)
 
     def diagnostic_name(self):
         return "%s/%s" % (PrintError.diagnostic_name(self),
@@ -517,7 +519,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
-        # Settings / Preferences are all reserved keywords in OSX using this as work around
+        # Settings / Preferences are all reserved keywords in macOS using this as work around
         tools_menu.addAction(_("Electrum preferences") if sys.platform == 'darwin' else _("Preferences"), self.settings_dialog)
         tools_menu.addAction(_("&Network"), lambda: self.gui_object.show_network_dialog(self))
         tools_menu.addAction(_("&Plugins"), self.plugins_dialog)
@@ -637,7 +639,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.require_fee_update = False
 
     def format_amount(self, x, is_diff=False, whitespaces=False):
-        return format_satoshis(x, is_diff, self.num_zeros, self.decimal_point, whitespaces)
+        return format_satoshis(x, self.num_zeros, self.decimal_point, is_diff=is_diff, whitespaces=whitespaces)
 
     def format_amount_and_units(self, amount):
         text = self.format_amount(amount) + ' '+ self.base_unit()
@@ -647,7 +649,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return text
 
     def format_fee_rate(self, fee_rate):
-        return format_satoshis(fee_rate/1000, False, self.num_zeros, 0, False)  + ' sat/byte'
+        return format_fee_satoshis(fee_rate/1000, self.num_zeros) + ' sat/byte'
 
     def get_decimal_point(self):
         return self.decimal_point
@@ -723,9 +725,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 c, u, x = self.wallet.get_balance()
                 text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))
                 if u:
-                    text +=  " [%s unconfirmed]"%(self.format_amount(u, True).strip())
+                    text +=  " [%s unconfirmed]"%(self.format_amount(u, is_diff=True).strip())
                 if x:
-                    text +=  " [%s unmatured]"%(self.format_amount(x, True).strip())
+                    text +=  " [%s unmatured]"%(self.format_amount(x, is_diff=True).strip())
 
                 # append fiat balance and price
                 if self.fx.is_enabled():
@@ -789,7 +791,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         msg = _('Vertcoin address where the payment should be received. Note that each payment request uses a different Vertcoin address.')
         self.receive_address_label = HelpLabel(_('Receiving address'), msg)
         self.receive_address_e.textChanged.connect(self.update_receive_qr)
-        self.receive_address_e.setFocusPolicy(Qt.NoFocus)
+        self.receive_address_e.setFocusPolicy(Qt.ClickFocus)
         grid.addWidget(self.receive_address_label, 0, 0)
         grid.addWidget(self.receive_address_e, 0, 1, 1, -1)
 
@@ -1050,7 +1052,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         completer = QCompleter()
         completer.setCaseSensitivity(False)
-        self.payto_e.setCompleter(completer)
+        self.payto_e.set_completer(completer)
         completer.setModel(self.completions)
 
         msg = _('Description of the transaction (not mandatory).') + '\n\n'\
@@ -1613,7 +1615,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return status, msg
 
         # Capture current TL window; override might be removed on return
-        parent = self.top_level_window()
+        parent = self.top_level_window(lambda win: isinstance(win, MessageBoxMixin))
 
         def broadcast_done(result):
             # GUI thread
@@ -1838,6 +1840,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def show_invoice(self, key):
         pr = self.invoices.get(key)
+        if pr is None:
+            self.show_error('Cannot find payment request in wallet.')
+            return
         pr.verify(self.contacts)
         self.show_pr_details(pr)
 
@@ -2371,7 +2376,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         if isinstance(self.wallet, Multisig_Wallet):
             self.show_message(_('WARNING: This is a multi-signature wallet.') + '\n' +
-                              _('It can not be "backed up" by simply exporting these private keys.'))
+                              _('It cannot be "backed up" by simply exporting these private keys.'))
 
         d = WindowModalDialog(self, _('Private keys'))
         d.setMinimumSize(980, 300)
@@ -2601,9 +2606,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         lang_combo = QComboBox()
         from electrum_vtc.i18n import languages
         lang_combo.addItems(list(languages.values()))
+        lang_keys = list(languages.keys())
+        lang_cur_setting = self.config.get("language", '')
         try:
-            index = languages.keys().index(self.config.get("language",''))
-        except Exception:
+            index = lang_keys.index(lang_cur_setting)
+        except ValueError:  # not in list
             index = 0
         lang_combo.setCurrentIndex(index)
         if not self.config.is_modifiable('language'):
@@ -2721,9 +2728,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         id_widgets.append((SSL_id_label, SSL_id_e))
 
         units = ['VTC', 'mVTC', 'uVTC']
-        msg = _('Base unit of your wallet.')\
-              + '\n1VTC=1000mVTC.\n' \
-              + _(' These settings affects the fields in the Send tab')+' '
+        msg = (_('Base unit of your wallet.')
+               + '\n1VTC=1000mVTC.\n'
+               + _('This setting affects the Send tab, and all balance related fields.'))
         unit_label = HelpLabel(_('Base unit') + ':', msg)
         unit_combo = QComboBox()
         unit_combo.addItems(units)
@@ -3131,6 +3138,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def bump_fee_dialog(self, tx):
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)
+        if fee is None:
+            self.show_error(_("Can't bump fee: unknown fee for original transaction."))
+            return
         tx_label = self.wallet.get_label(tx.txid())
         tx_size = tx.estimated_size()
         d = WindowModalDialog(self, _('Bump Fee'))
@@ -3182,5 +3192,3 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.need_update.set()
             self.msg_box(QPixmap(":icons/offline_tx.png"), None, _('Success'), _("Transaction added to wallet history"))
             return True
-
-

@@ -44,6 +44,10 @@ def serialize_header(res):
     return s
 
 def deserialize_header(s, height):
+    if not s:
+        raise Exception('Invalid header: {}'.format(s))
+    if len(s) != 80:
+        raise Exception('Invalid header length: {}'.format(len(s)))
     hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
     h = {}
     h['version'] = hex_to_int(s[0:4])
@@ -166,7 +170,7 @@ class Blockchain(util.PrintError):
     def verify_header(self, header, prev_hash, bits, target, check_bits_target=True):
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
-            raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+            raise Exception("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
         if constants.net.TESTNET:
             return
         if check_bits_target:
@@ -224,8 +228,10 @@ class Blockchain(util.PrintError):
         parent_id = self.parent_id
         checkpoint = self.checkpoint
         parent = self.parent()
+        self.assert_headers_file_available(self.path())
         with open(self.path(), 'rb') as f:
             my_data = f.read()
+        self.assert_headers_file_available(parent.path())
         with open(parent.path(), 'rb') as f:
             f.seek((checkpoint - parent.checkpoint)*80)
             parent_data = f.read(parent_branch_size*80)
@@ -248,9 +254,18 @@ class Blockchain(util.PrintError):
         blockchains[self.checkpoint] = self
         blockchains[parent.checkpoint] = parent
 
+    def assert_headers_file_available(self, path):
+        if os.path.exists(path):
+            return
+        elif not os.path.exists(util.get_headers_dir(self.config)):
+            raise FileNotFoundError('Electrum headers_dir does not exist. Was it deleted while running?')
+        else:
+            raise FileNotFoundError('Cannot find headers file but headers_dir is there. Should be at {}'.format(path))
+
     def write(self, data, offset, truncate=True):
         filename = self.path()
         with self.lock:
+            self.assert_headers_file_available(filename)
             with open(filename, 'rb+') as f:
                 if truncate and offset != self._size*80:
                     f.seek(offset)
@@ -279,14 +294,12 @@ class Blockchain(util.PrintError):
             return
         delta = height - self.checkpoint
         name = self.path()
-        if os.path.exists(name):
-            with open(name, 'rb') as f:
-                f.seek(delta * 80)
-                h = f.read(80)
-        elif not os.path.exists(util.get_headers_dir(self.config)):
-            raise Exception('Electrum datadir does not exist. Was it deleted while running?')
-        else:
-            raise Exception('Cannot find headers file but datadir is there. Should be at {}'.format(name))
+        self.assert_headers_file_available(name)
+        with open(name, 'rb') as f:
+            f.seek(delta * 80)
+            h = f.read(80)
+            if len(h) < 80:
+                raise Exception('Expected to read a full header. This was only {} bytes'.format(len(h)))
         if h == bytes([0])*80:
             return None
         return deserialize_header(h, height)

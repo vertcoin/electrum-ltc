@@ -3,7 +3,7 @@
 
 [Desktop Entry]
 Comment=Lightweight Vertcoin Client
-Exec=sh -c 'PATH="$HOME/.local/bin:$PATH" electrum-vtc %u'
+Exec=sh -c "PATH=\"\\$HOME/.local/bin:\\$PATH\" electrum-vtc %u"
 GenericName[en_US]=Vertcoin Wallet
 GenericName=Vertcoin Wallet
 Icon=electrum-vtc
