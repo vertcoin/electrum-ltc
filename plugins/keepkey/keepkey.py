@@ -2,7 +2,7 @@ from binascii import hexlify, unhexlify
 import traceback
 import sys
 
-from electrum_vtc.util import bfh, bh2u
+from electrum_vtc.util import bfh, bh2u, UserCancelled
 from electrum_vtc.bitcoin import (b58_address_to_hash160, xpub_from_pubkey,
                               TYPE_ADDRESS, TYPE_SCRIPT,
                               is_segwit_address)
@@ -15,6 +15,7 @@ from electrum_vtc.wallet import Standard_Wallet
 from electrum_vtc.base_wizard import ScriptTypeNotSupported
 
 from ..hw_wallet import HW_PluginBase
+from ..hw_wallet.plugin import is_any_tx_output_on_change_branch
 
 
 # TREZOR initialization methods
@@ -78,6 +79,7 @@ class KeepKeyPlugin(HW_PluginBase):
     libraries_URL = 'https://github.com/keepkey/python-keepkey'
     minimum_firmware = (1, 0, 0)
     keystore_class = KeepKey_KeyStore
+    SUPPORTED_XTYPES = ('standard', )
 
     MAX_LABEL_LEN = 32
 
@@ -180,17 +182,26 @@ class KeepKeyPlugin(HW_PluginBase):
             t = threading.Thread(target=self._initialize_device_safe, args=(settings, method, device_id, wizard, handler))
             t.setDaemon(True)
             t.start()
-            wizard.loop.exec_()
+            exit_code = wizard.loop.exec_()
+            if exit_code != 0:
+                # this method (initialize_device) was called with the expectation
+                # of leaving the device in an initialized state when finishing.
+                # signal that this is not the case:
+                raise UserCancelled()
         wizard.choice_dialog(title=_('Initialize Device'), message=msg, choices=choices, run_next=f)
 
     def _initialize_device_safe(self, settings, method, device_id, wizard, handler):
+        exit_code = 0
         try:
             self._initialize_device(settings, method, device_id, wizard, handler)
+        except UserCancelled:
+            exit_code = 1
         except BaseException as e:
             traceback.print_exc(file=sys.stderr)
             handler.show_error(str(e))
+            exit_code = 1
         finally:
-            wizard.loop.exit(0)
+            wizard.loop.exit(exit_code)
 
     def _initialize_device(self, settings, method, device_id, wizard, handler):
         item, label, pin_protection, passphrase_protection = settings
@@ -222,6 +233,9 @@ class KeepKeyPlugin(HW_PluginBase):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
         client = devmgr.client_by_id(device_id)
+        if client is None:
+            raise Exception(_('Failed to create a client for this device.') + '\n' +
+                            _('Make sure it is in the correct state.'))
         # fixme: we should use: client.handler = wizard
         client.handler = self.create_handler(wizard)
         if not device_info.initialized:
@@ -230,8 +244,8 @@ class KeepKeyPlugin(HW_PluginBase):
         client.used()
 
     def get_xpub(self, device_id, derivation, xtype, wizard):
-        if xtype not in ('standard',):
-            raise ScriptTypeNotSupported(_('This type of script is not supported with KeepKey.'))
+        if xtype not in self.SUPPORTED_XTYPES:
+            raise ScriptTypeNotSupported(_('This type of script is not supported with {}.').format(self.device))
         devmgr = self.device_manager()
         client = devmgr.client_by_id(device_id)
         client.handler = wizard
@@ -245,9 +259,9 @@ class KeepKeyPlugin(HW_PluginBase):
         client = self.get_client(keystore)
         inputs = self.tx_inputs(tx, True, keystore.is_segwit())
         outputs = self.tx_outputs(keystore.get_derivation(), tx, keystore.is_segwit())
-        signed_tx = client.sign_tx(self.get_coin_name(), inputs, outputs, lock_time=tx.locktime)[1]
-        raw = bh2u(signed_tx)
-        tx.update_signatures(raw)
+        signatures = client.sign_tx(self.get_coin_name(), inputs, outputs, lock_time=tx.locktime)[0]
+        signatures = [(bh2u(x) + '01') for x in signatures]
+        tx.update_signatures(signatures)
 
     def show_address(self, wallet, address, keystore=None):
         if keystore is None:
@@ -322,7 +336,7 @@ class KeepKeyPlugin(HW_PluginBase):
             txinputtype.prev_hash = prev_hash
             txinputtype.prev_index = prev_index
 
-            if 'scriptSig' in txin:
+            if txin.get('scriptSig') is not None:
                 script_sig = bfh(txin['scriptSig'])
                 txinputtype.script_sig = script_sig
 
@@ -380,18 +394,9 @@ class KeepKeyPlugin(HW_PluginBase):
                 txoutputtype.address = address
             return txoutputtype
 
-        def is_any_output_on_change_branch():
-            for _type, address, amount in tx.outputs():
-                info = tx.output_info.get(address)
-                if info is not None:
-                    index, xpubs, m = info
-                    if index[0] == 1:
-                        return True
-            return False
-
         outputs = []
         has_change = False
-        any_output_on_change_branch = is_any_output_on_change_branch()
+        any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
 
         for _type, address, amount in tx.outputs():
             use_create_by_derivation = False

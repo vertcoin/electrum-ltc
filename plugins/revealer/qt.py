@@ -21,6 +21,7 @@ import random
 import qrcode
 import traceback
 from hashlib import sha256
+from decimal import Decimal
 
 from PyQt5.QtPrintSupport import QPrinter
 
@@ -28,7 +29,7 @@ from electrum_vtc.plugins import BasePlugin, hook
 from electrum_vtc.i18n import _
 from electrum_vtc_gui.qt.util import *
 from electrum_vtc_gui.qt.qrtextedit import ScanQRTextEdit
-from electrum_vtc.util import to_bytes
+from electrum_vtc.util import to_bytes, make_dir
 
 
 class Plugin(BasePlugin):
@@ -52,8 +53,7 @@ class Plugin(BasePlugin):
         self.abstand_v = 34
         self.calibration_noise = int('10' * 128)
         self.rawnoise = False
-        if not os.path.exists(self.base_dir):
-            os.mkdir(self.base_dir)
+        make_dir(self.base_dir)
 
     @hook
     def set_seed(self, seed, parent):
@@ -715,9 +715,9 @@ class Plugin(BasePlugin):
         if not d.exec_():
             return
 
-        self.calibration_h = int(horizontal.text())
+        self.calibration_h = int(Decimal(horizontal.text()))
         self.config.set_key('calibration_h', self.calibration_h)
-        self.calibration_v = int(vertical.text())
+        self.calibration_v = int(Decimal(vertical.text()))
         self.config.set_key('calibration_v', self.calibration_v)
 
 

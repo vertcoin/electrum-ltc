@@ -24,15 +24,20 @@ import os
 import threading
 
 from . import util
-from . import bitcoin
+from .bitcoin import Hash, hash_encode, int_to_hex, rev_hex
 from . import constants
-from .bitcoin import *
+from .util import bfh, bh2u
 
 import lyra2re_hash
 import lyra2re2_hash
 import vtc_scrypt
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+
+class MissingHeader(Exception):
+    pass
+
 
 def serialize_header(res):
     s = int_to_hex(res.get('version'), 4) \
@@ -82,8 +87,7 @@ blockchains = {}
 def read_blockchains(config):
     blockchains[0] = Blockchain(config, 0, None)
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
-    if not os.path.exists(fdir):
-        os.mkdir(fdir)
+    util.make_dir(fdir)
     l = filter(lambda x: x.startswith('fork_'), os.listdir(fdir))
     l = sorted(l, key = lambda x: int(x.split('_')[1]))
     for filename in l:

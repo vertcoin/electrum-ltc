@@ -4,14 +4,17 @@ import threading
 from PyQt5.Qt import Qt
 from PyQt5.Qt import QGridLayout, QInputDialog, QPushButton
 from PyQt5.Qt import QVBoxLayout, QLabel
-from electrum_vtc_gui.qt.util import *
-from .trezor import TrezorPlugin, TIM_NEW, TIM_RECOVER, TIM_MNEMONIC
-from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
 
+from electrum_vtc_gui.qt.util import *
 from electrum_vtc.i18n import _
 from electrum_vtc.plugins import hook, DeviceMgr
 from electrum_vtc.util import PrintError, UserCancelled, bh2u
 from electrum_vtc.wallet import Wallet, Standard_Wallet
+
+from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
+from .trezor import (TrezorPlugin, TIM_NEW, TIM_RECOVER, TIM_MNEMONIC,
+                     RECOVERY_TYPE_SCRAMBLED_WORDS, RECOVERY_TYPE_MATRIX)
+
 
 PASSPHRASE_HELP_SHORT =_(
     "Passphrases allow you to access new wallets, each "
@@ -28,22 +31,110 @@ PASSPHRASE_NOT_PIN = _(
     "If you forget a passphrase you will be unable to access any "
     "vertcoins in the wallet behind it.  A passphrase is not a PIN. "
     "Only change this if you are sure you understand it.")
+MATRIX_RECOVERY = _(
+    "Enter the recovery words by pressing the buttons according to what "
+    "the device shows on its display.  You can also use your NUMPAD.\n"
+    "Press BACKSPACE to go back a choice or word.\n")
+
+
+class MatrixDialog(WindowModalDialog):
+
+    def __init__(self, parent):
+        super(MatrixDialog, self).__init__(parent)
+        self.setWindowTitle(_("Trezor Matrix Recovery"))
+        self.num = 9
+        self.loop = QEventLoop()
+
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(WWLabel(MATRIX_RECOVERY))
+
+        grid = QGridLayout()
+        grid.setSpacing(0)
+        self.char_buttons = []
+        for y in range(3):
+            for x in range(3):
+                button = QPushButton('?')
+                button.clicked.connect(partial(self.process_key, ord('1') + y * 3 + x))
+                grid.addWidget(button, 3 - y, x)
+                self.char_buttons.append(button)
+        vbox.addLayout(grid)
+
+        self.backspace_button = QPushButton("<=")
+        self.backspace_button.clicked.connect(partial(self.process_key, Qt.Key_Backspace))
+        self.cancel_button = QPushButton(_("Cancel"))
+        self.cancel_button.clicked.connect(partial(self.process_key, Qt.Key_Escape))
+        buttons = Buttons(self.backspace_button, self.cancel_button)
+        vbox.addSpacing(40)
+        vbox.addLayout(buttons)
+        self.refresh()
+        self.show()
+
+    def refresh(self):
+        for y in range(3):
+            self.char_buttons[3 * y + 1].setEnabled(self.num == 9)
+
+    def is_valid(self, key):
+        return key >= ord('1') and key <= ord('9')
+
+    def process_key(self, key):
+        self.data = None
+        if key == Qt.Key_Backspace:
+            self.data = '\010'
+        elif key == Qt.Key_Escape:
+            self.data = 'x'
+        elif self.is_valid(key):
+            self.char_buttons[key - ord('1')].setFocus()
+            self.data = '%c' % key
+        if self.data:
+            self.loop.exit(0)
+
+    def keyPressEvent(self, event):
+        self.process_key(event.key())
+        if not self.data:
+            QDialog.keyPressEvent(self, event)
+
+    def get_matrix(self, num):
+        self.num = num
+        self.refresh()
+        self.loop.exec_()
 
 
 class QtHandler(QtHandlerBase):
 
     pin_signal = pyqtSignal(object)
+    matrix_signal = pyqtSignal(object)
+    close_matrix_dialog_signal = pyqtSignal()
 
     def __init__(self, win, pin_matrix_widget_class, device):
         super(QtHandler, self).__init__(win, device)
         self.pin_signal.connect(self.pin_dialog)
+        self.matrix_signal.connect(self.matrix_recovery_dialog)
+        self.close_matrix_dialog_signal.connect(self._close_matrix_dialog)
         self.pin_matrix_widget_class = pin_matrix_widget_class
+        self.matrix_dialog = None
 
     def get_pin(self, msg):
         self.done.clear()
         self.pin_signal.emit(msg)
         self.done.wait()
         return self.response
+
+    def get_matrix(self, msg):
+        self.done.clear()
+        self.matrix_signal.emit(msg)
+        self.done.wait()
+        data = self.matrix_dialog.data
+        if data == 'x':
+            self.close_matrix_dialog()
+        return data
+
+    def _close_matrix_dialog(self):
+        if self.matrix_dialog:
+            self.matrix_dialog.accept()
+            self.matrix_dialog = None
+
+    def close_matrix_dialog(self):
+        self.close_matrix_dialog_signal.emit()
 
     def pin_dialog(self, msg):
         # Needed e.g. when resetting a device
@@ -57,6 +148,12 @@ class QtHandler(QtHandlerBase):
         dialog.setLayout(vbox)
         dialog.exec_()
         self.response = str(matrix.get_value())
+        self.done.set()
+
+    def matrix_recovery_dialog(self, msg):
+        if not self.matrix_dialog:
+            self.matrix_dialog = MatrixDialog(self.top_level_window())
+        self.matrix_dialog.get_matrix(msg)
         self.done.set()
 
 
@@ -84,7 +181,7 @@ class QtPlugin(QtPluginBase):
         if device_id:
             SettingsDialog(window, self, keystore, device_id).exec_()
 
-    def request_trezor_init_settings(self, wizard, method, device):
+    def request_trezor_init_settings(self, wizard, method, model):
         vbox = QVBoxLayout()
         next_enabled = True
         label = QLabel(_("Enter a label to name your device:"))
@@ -105,12 +202,12 @@ class QtPlugin(QtPluginBase):
             gb.setLayout(hbox1)
             vbox.addWidget(gb)
             gb.setTitle(_("Select your seed length:"))
-            bg = QButtonGroup()
+            bg_numwords = QButtonGroup()
             for i, count in enumerate([12, 18, 24]):
                 rb = QRadioButton(gb)
                 rb.setText(_("%d words") % count)
-                bg.addButton(rb)
-                bg.setId(rb, i)
+                bg_numwords.addButton(rb)
+                bg_numwords.setId(rb, i)
                 hbox1.addWidget(rb)
                 rb.setChecked(True)
             cb_pin = QCheckBox(_('Enable PIN protection'))
@@ -153,16 +250,42 @@ class QtPlugin(QtPluginBase):
         vbox.addWidget(passphrase_warning)
         vbox.addWidget(cb_phrase)
 
+        # ask for recovery type (random word order OR matrix)
+        if method == TIM_RECOVER and not model == 'T':
+            gb_rectype = QGroupBox()
+            hbox_rectype = QHBoxLayout()
+            gb_rectype.setLayout(hbox_rectype)
+            vbox.addWidget(gb_rectype)
+            gb_rectype.setTitle(_("Select recovery type:"))
+            bg_rectype = QButtonGroup()
+
+            rb1 = QRadioButton(gb_rectype)
+            rb1.setText(_('Scrambled words'))
+            bg_rectype.addButton(rb1)
+            bg_rectype.setId(rb1, RECOVERY_TYPE_SCRAMBLED_WORDS)
+            hbox_rectype.addWidget(rb1)
+            rb1.setChecked(True)
+
+            rb2 = QRadioButton(gb_rectype)
+            rb2.setText(_('Matrix'))
+            bg_rectype.addButton(rb2)
+            bg_rectype.setId(rb2, RECOVERY_TYPE_MATRIX)
+            hbox_rectype.addWidget(rb2)
+        else:
+            bg_rectype = None
+
         wizard.exec_layout(vbox, next_enabled=next_enabled)
 
         if method in [TIM_NEW, TIM_RECOVER]:
-            item = bg.checkedId()
+            item = bg_numwords.checkedId()
             pin = cb_pin.isChecked()
+            recovery_type = bg_rectype.checkedId() if bg_rectype else None
         else:
             item = ' '.join(str(clean_text(text)).split())
             pin = str(pin.text())
+            recovery_type = None
 
-        return (item, name.text(), pin, cb_phrase.isChecked())
+        return (item, name.text(), pin, cb_phrase.isChecked(), recovery_type)
 
 
 class Plugin(TrezorPlugin, QtPlugin):
@@ -222,7 +345,6 @@ class SettingsDialog(WindowModalDialog):
             version = "%d.%d.%d" % (features.major_version,
                                     features.minor_version,
                                     features.patch_version)
-            coins = ", ".join(coin.coin_name for coin in features.coins)
 
             device_label.setText(features.label)
             pin_set_label.setText(noyes[features.pin_protection])
@@ -232,7 +354,6 @@ class SettingsDialog(WindowModalDialog):
             device_id_label.setText(features.device_id)
             initialized_label.setText(noyes[features.initialized])
             version_label.setText(version)
-            coins_label.setText(coins)
             clear_pin_button.setVisible(features.pin_protection)
             clear_pin_warning.setVisible(features.pin_protection)
             pin_button.setText(setchange[features.pin_protection])
@@ -269,16 +390,20 @@ class SettingsDialog(WindowModalDialog):
         def change_homescreen():
             dialog = QFileDialog(self, _("Choose Homescreen"))
             filename, __ = dialog.getOpenFileName()
+            if not filename:
+                return  # user cancelled
 
             if filename.endswith('.toif'):
                 img = open(filename, 'rb').read()
                 if img[:8] != b'TOIf\x90\x00\x90\x00':
-                    raise Exception('File is not a TOIF file with size of 144x144')
+                    handler.show_error('File is not a TOIF file with size of 144x144')
+                    return
             else:
                 from PIL import Image # FIXME
                 im = Image.open(filename)
                 if im.size != (128, 64):
-                    raise Exception('Image must be 128 x 64 pixels')
+                    handler.show_error('Image must be 128 x 64 pixels')
+                    return
                 im = im.convert('1')
                 pix = im.load()
                 img = bytearray(1024)
@@ -288,7 +413,7 @@ class SettingsDialog(WindowModalDialog):
                             o = (i + j * 128)
                             img[o // 8] |= (1 << (7 - o % 8))
                 img = bytes(img)
-                invoke_client('change_homescreen', img)
+            invoke_client('change_homescreen', img)
 
         def clear_homescreen():
             invoke_client('change_homescreen', b'\x00')
@@ -329,8 +454,6 @@ class SettingsDialog(WindowModalDialog):
         device_id_label = QLabel()
         bl_hash_label = QLabel()
         bl_hash_label.setWordWrap(True)
-        coins_label = QLabel()
-        coins_label.setWordWrap(True)
         language_label = QLabel()
         initialized_label = QLabel()
         rows = [
@@ -340,7 +463,6 @@ class SettingsDialog(WindowModalDialog):
             (_("Firmware Version"), version_label),
             (_("Device ID"), device_id_label),
             (_("Bootloader Hash"), bl_hash_label),
-            (_("Supported Coins"), coins_label),
             (_("Language"), language_label),
             (_("Initialized"), initialized_label),
         ]
@@ -386,22 +508,27 @@ class SettingsDialog(WindowModalDialog):
         settings_glayout.addWidget(pin_msg, 3, 1, 1, -1)
 
         # Settings tab - Homescreen
-        if plugin.device != 'KeepKey':   # Not yet supported by KK firmware
-            homescreen_layout = QHBoxLayout()
-            homescreen_label = QLabel(_("Homescreen"))
-            homescreen_change_button = QPushButton(_("Change..."))
-            homescreen_clear_button = QPushButton(_("Reset"))
-            homescreen_change_button.clicked.connect(change_homescreen)
-            homescreen_clear_button.clicked.connect(clear_homescreen)
-            homescreen_msg = QLabel(_("You can set the homescreen on your "
-                                      "device to personalize it.  You must "
-                                      "choose a {} x {} monochrome black and "
-                                      "white image.").format(hs_rows, hs_cols))
-            homescreen_msg.setWordWrap(True)
-            settings_glayout.addWidget(homescreen_label, 4, 0)
-            settings_glayout.addWidget(homescreen_change_button, 4, 1)
-            settings_glayout.addWidget(homescreen_clear_button, 4, 2)
-            settings_glayout.addWidget(homescreen_msg, 5, 1, 1, -1)
+        homescreen_label = QLabel(_("Homescreen"))
+        homescreen_change_button = QPushButton(_("Change..."))
+        homescreen_clear_button = QPushButton(_("Reset"))
+        homescreen_change_button.clicked.connect(change_homescreen)
+        try:
+            import PIL
+        except ImportError:
+            homescreen_change_button.setDisabled(True)
+            homescreen_change_button.setToolTip(
+                _("Required package 'PIL' is not available - Please install it or use the Trezor website instead.")
+            )
+        homescreen_clear_button.clicked.connect(clear_homescreen)
+        homescreen_msg = QLabel(_("You can set the homescreen on your "
+                                  "device to personalize it.  You must "
+                                  "choose a {} x {} monochrome black and "
+                                  "white image.").format(hs_rows, hs_cols))
+        homescreen_msg.setWordWrap(True)
+        settings_glayout.addWidget(homescreen_label, 4, 0)
+        settings_glayout.addWidget(homescreen_change_button, 4, 1)
+        settings_glayout.addWidget(homescreen_clear_button, 4, 2)
+        settings_glayout.addWidget(homescreen_msg, 5, 1, 1, -1)
 
         # Settings tab - Session Timeout
         timeout_label = QLabel(_("Session Timeout"))

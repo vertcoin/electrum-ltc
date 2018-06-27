@@ -91,6 +91,7 @@ class BitcoinMainnet:
         'p2wpkh':      0x04b24746,  # zpub
         'p2wsh':       0x02aa7ed3,  # Zpub
     }
+    BIP44_COIN_TYPE = 0
 
 
 class BitcoinTestnet:
@@ -119,6 +120,7 @@ class BitcoinTestnet:
         'p2wpkh':      0x045f1cf6,  # vpub
         'p2wsh':       0x02575483,  # Vpub
     }
+    BIP44_COIN_TYPE = 1
 
 
 class BitcoinRegtest(BitcoinTestnet):
@@ -129,9 +131,20 @@ class BitcoinRegtest(BitcoinTestnet):
     CHECKPOINTS = []
 
 
+class BitcoinSimnet(BitcoinTestnet):
+
+    SEGWIT_HRP = "sb"
+    GENESIS = "683e86bd5c6d110d91b94b97137ba6bfe02dbbdb8e3dff722a669b5d69d77af6"
+    DEFAULT_SERVERS = read_json('servers_regtest.json', {})
+    CHECKPOINTS = []
+
+
 # don't import net directly, import the module instead (so that net is singleton)
 net = VertcoinMainnet
 
+def set_simnet():
+    global net
+    net = BitcoinSimnet
 
 def set_mainnet():
     global net

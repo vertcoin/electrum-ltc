@@ -11,7 +11,9 @@ from electrum_vtc.keystore import Hardware_KeyStore
 from electrum_vtc.transaction import Transaction
 from electrum_vtc.wallet import Standard_Wallet
 from ..hw_wallet import HW_PluginBase
+from ..hw_wallet.plugin import is_any_tx_output_on_change_branch
 from electrum_vtc.util import print_error, is_verbose, bfh, bh2u, versiontuple
+from electrum_vtc.base_wizard import ScriptTypeNotSupported
 
 try:
     import hid
@@ -318,9 +320,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         signatures = []
         preparedTrustedInputs = []
         changePath = ""
-        changeAmount = None
         output = None
-        outputAmount = None
         p2shTransaction = False
         segwitTransaction = False
         pin = ""
@@ -385,22 +385,31 @@ class Ledger_KeyStore(Hardware_KeyStore):
             txOutput += script
         txOutput = bfh(txOutput)
 
-        # Recognize outputs - only one output and one change is authorized
+        # Recognize outputs
+        # - only one output and one change is authorized (for hw.1 and nano)
+        # - at most one output can bypass confirmation (~change) (for all)
         if not p2shTransaction:
             if not self.get_client_electrum().supports_multi_output():
                 if len(tx.outputs()) > 2:
                     self.give_error("Transaction with more than 2 outputs not supported")
+            has_change = False
+            any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
             for _type, address, amount in tx.outputs():
                 assert _type == TYPE_ADDRESS
                 info = tx.output_info.get(address)
                 if (info is not None) and len(tx.outputs()) > 1 \
-                        and info[0][0] == 1:  # "is on 'change' branch"
+                        and not has_change:
                     index, xpubs, m = info
-                    changePath = self.get_derivation()[2:] + "/%d/%d"%index
-                    changeAmount = amount
+                    on_change_branch = index[0] == 1
+                    # prioritise hiding outputs on the 'change' branch from user
+                    # because no more than one change address allowed
+                    if on_change_branch == any_output_on_change_branch:
+                        changePath = self.get_derivation()[2:] + "/%d/%d"%index
+                        has_change = True
+                    else:
+                        output = address
                 else:
                     output = address
-                    outputAmount = amount
 
         self.handler.show_message(_("Confirm Transaction on your Ledger device..."))
         try:
@@ -428,7 +437,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
             # Sign all inputs
             firstTransaction = True
             inputIndex = 0
-            rawTx = tx.serialize()
+            rawTx = tx.serialize_to_network()
             self.get_client().enableAlternate2fa(False)
             if segwitTransaction:
                 self.get_client().startUntrustedTransaction(True, inputIndex,
@@ -505,7 +514,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
 
         for i, txin in enumerate(tx.inputs()):
             signingPos = inputs[i][4]
-            Transaction.add_signature_to_txin(txin, signingPos, bh2u(signatures[i]))
+            tx.add_signature_to_txin(i, signingPos, bh2u(signatures[i]))
         tx.raw = tx.serialize()
 
     @test_pin_unlocked
@@ -549,6 +558,7 @@ class LedgerPlugin(HW_PluginBase):
                    (0x2c97, 0x0000), # Blue
                    (0x2c97, 0x0001)  # Nano-S
                  ]
+    SUPPORTED_XTYPES = ('standard', 'p2wpkh-p2sh', 'p2wpkh', 'p2wsh-p2sh', 'p2wsh')
 
     def __init__(self, parent, config, name):
         self.segwit = config.get("segwit")
@@ -585,10 +595,15 @@ class LedgerPlugin(HW_PluginBase):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
         client = devmgr.client_by_id(device_id)
+        if client is None:
+            raise Exception(_('Failed to create a client for this device.') + '\n' +
+                            _('Make sure it is in the correct state.'))
         client.handler = self.create_handler(wizard)
         client.get_xpub("m/44'/0'", 'standard') # TODO replace by direct derivation once Nano S > 1.1
 
     def get_xpub(self, device_id, derivation, xtype, wizard):
+        if xtype not in self.SUPPORTED_XTYPES:
+            raise ScriptTypeNotSupported(_('This type of script is not supported with {}.').format(self.device))
         devmgr = self.device_manager()
         client = devmgr.client_by_id(device_id)
         client.handler = self.create_handler(wizard)

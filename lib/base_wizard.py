@@ -26,11 +26,12 @@
 import os
 import sys
 import traceback
+from functools import partial
 
 from . import bitcoin
 from . import keystore
 from .keystore import bip44_derivation
-from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
+from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types, Wallet
 from .storage import STO_EV_USER_PW, STO_EV_XPUB_PW, get_derivation_used_for_hw_device_encryption
 from .i18n import _
 from .util import UserCancelled, InvalidPassword
@@ -47,9 +48,10 @@ class GoBack(Exception): pass
 
 class BaseWizard(object):
 
-    def __init__(self, config, storage):
+    def __init__(self, config, plugins, storage):
         super(BaseWizard, self).__init__()
         self.config = config
+        self.plugins = plugins
         self.storage = storage
         self.wallet = None
         self.stack = []
@@ -57,6 +59,9 @@ class BaseWizard(object):
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
+
+    def set_icon(self, icon):
+        pass
 
     def run(self, *args):
         action = args[0]
@@ -99,6 +104,12 @@ class BaseWizard(object):
         ]
         choices = [pair for pair in wallet_kinds if pair[0] in wallet_types]
         self.choice_dialog(title=title, message=message, choices=choices, run_next=self.on_wallet_type)
+
+    def upgrade_storage(self):
+        def on_finished():
+            self.wallet = Wallet(self.storage)
+            self.terminate()
+        self.waiting_dialog(partial(self.storage.upgrade), _('Upgrading wallet format...'), on_finished=on_finished)
 
     def load_2fa(self):
         self.storage.put('wallet_type', '2fa')
@@ -155,7 +166,7 @@ class BaseWizard(object):
         title = _("Import Vertcoin Addresses")
         message = _("Enter a list of Vertcoin addresses (this will create a watching-only wallet), or a list of private keys.")
         self.add_xpub_dialog(title=title, message=message, run_next=self.on_import,
-                             is_valid=v, allow_multi=True)
+                             is_valid=v, allow_multi=True, show_wif_help=True)
 
     def on_import(self, text):
         # create a temporary wallet and exploit that modifications
@@ -362,12 +373,8 @@ class BaseWizard(object):
         elif self.seed_type == 'old':
             self.run('create_keystore', seed, '')
         elif self.seed_type == '2fa':
-            if self.is_kivy:
-                self.show_error(_('2FA seeds are not supported in this version'))
-                self.run('restore_from_seed')
-            else:
-                self.load_2fa()
-                self.run('on_restore_seed', seed, is_ext)
+            self.load_2fa()
+            self.run('on_restore_seed', seed, is_ext)
         else:
             raise Exception('Unknown seed type', self.seed_type)
 

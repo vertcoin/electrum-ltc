@@ -40,13 +40,19 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         (os.path.join(usr_share, icons_dirname), ['icons/electrum-vtc.png'])
     ]
 
+extras_require = {
+    'hardware': requirements_hw,
+    'fast': ['pycryptodomex'],
+    ':python_version < "3.5"': ['typing>=3.0.0'],
+}
+extras_require['full'] = extras_require['hardware'] + extras_require['fast']
+
+
 setup(
     name="Electrum-VTC",
     version=version.ELECTRUM_VERSION,
     install_requires=requirements,
-    extras_require={
-        'full': requirements_hw + ['pycryptodomex'],
-    },
+    extras_require=extras_require,
     packages=[
         'electrum_vtc',
         'electrum_vtc_gui',
@@ -60,6 +66,7 @@ setup(
         'electrum_vtc_plugins.keepkey',
         'electrum_vtc_plugins.labels',
         'electrum_vtc_plugins.ledger',
+        'electrum_vtc_plugins.revealer',
         'electrum_vtc_plugins.trezor',
         'electrum_vtc_plugins.digitalbitbox',
         'electrum_vtc_plugins.trustedcoin',
@@ -71,17 +78,10 @@ setup(
         'electrum_vtc_plugins': 'plugins',
     },
     package_data={
+        '': ['*.txt', '*.json', '*.ttf', '*.otf'],
         'electrum_vtc': [
-            'servers.json',
-            'servers_testnet.json',
-            'servers_regtest.json',
-            'currencies.json',
-            'checkpoints.json',
-            'checkpoints_testnet.json',
-            'www/index.html',
-            'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
-        ]
+        ],
     },
     scripts=['electrum-vtc'],
     data_files=data_files,

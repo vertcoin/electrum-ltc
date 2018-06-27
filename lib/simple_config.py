@@ -3,12 +3,14 @@ import threading
 import time
 import os
 import stat
+from decimal import Decimal
+from typing import Union
 
 from copy import deepcopy
 
 from . import util
-from .util import (user_dir, print_error, PrintError,
-                   NoDynamicFeeEstimates, format_fee_satoshis)
+from .util import (user_dir, print_error, PrintError, make_dir,
+                   NoDynamicFeeEstimates, format_fee_satoshis, quantize_feerate)
 from .i18n import _
 
 FEE_ETA_TARGETS = [25, 10, 5, 2]
@@ -104,21 +106,16 @@ class SimpleConfig(PrintError):
         if path is None:
             path = self.user_dir()
 
-        def make_dir(path):
-            # Make directory if it does not yet exist.
-            if not os.path.exists(path):
-                if os.path.islink(path):
-                    raise Exception('Dangling link: ' + path)
-                os.mkdir(path)
-                os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-
-        make_dir(path)
+        make_dir(path, allow_symlink=False)
         if self.get('testnet'):
             path = os.path.join(path, 'testnet')
-            make_dir(path)
+            make_dir(path, allow_symlink=False)
         elif self.get('regtest'):
             path = os.path.join(path, 'regtest')
-            make_dir(path)
+            make_dir(path, allow_symlink=False)
+        elif self.get('simnet'):
+            path = os.path.join(path, 'simnet')
+            make_dir(path, allow_symlink=False)
 
         self.print_error("electrum directory", path)
         return path
@@ -239,11 +236,7 @@ class SimpleConfig(PrintError):
         # default path
         util.assert_datadir_available(self.path)
         dirpath = os.path.join(self.path, "wallets")
-        if not os.path.exists(dirpath):
-            if os.path.islink(dirpath):
-                raise Exception('Dangling link: ' + dirpath)
-            os.mkdir(dirpath)
-            os.chmod(dirpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        make_dir(dirpath, allow_symlink=False)
 
         new_path = os.path.join(self.path, "wallets", "default_wallet")
 
@@ -289,16 +282,18 @@ class SimpleConfig(PrintError):
         return get_fee_within_limits
 
     @impose_hard_limits_on_fee
-    def eta_to_fee(self, i):
+    def eta_to_fee(self, slider_pos) -> Union[int, None]:
         """Returns fee in sat/kbyte."""
-        if i < 4:
-            j = FEE_ETA_TARGETS[i]
-            fee = self.fee_estimates.get(j)
+        slider_pos = max(slider_pos, 0)
+        slider_pos = min(slider_pos, len(FEE_ETA_TARGETS))
+        if slider_pos < len(FEE_ETA_TARGETS):
+            target_blocks = FEE_ETA_TARGETS[slider_pos]
+            fee = self.fee_estimates.get(target_blocks)
         else:
-            assert i == 4
             fee = self.fee_estimates.get(2)
             if fee is not None:
                 fee += fee/2
+                fee = int(fee)
         return fee
 
     def fee_to_depth(self, target_fee):
@@ -312,9 +307,9 @@ class SimpleConfig(PrintError):
         return depth
 
     @impose_hard_limits_on_fee
-    def depth_to_fee(self, i):
+    def depth_to_fee(self, slider_pos) -> int:
         """Returns fee in sat/kbyte."""
-        target = self.depth_target(i)
+        target = self.depth_target(slider_pos)
         depth = 0
         for fee, s in self.mempool_fees:
             depth += s
@@ -324,8 +319,10 @@ class SimpleConfig(PrintError):
             return 0
         return fee * 1000
 
-    def depth_target(self, i):
-        return FEE_DEPTH_TARGETS[i]
+    def depth_target(self, slider_pos):
+        slider_pos = max(slider_pos, 0)
+        slider_pos = min(slider_pos, len(FEE_DEPTH_TARGETS)-1)
+        return FEE_DEPTH_TARGETS[slider_pos]
 
     def eta_target(self, i):
         if i == len(FEE_ETA_TARGETS):
@@ -441,14 +438,35 @@ class SimpleConfig(PrintError):
     def use_mempool_fees(self):
         return bool(self.get('mempool_fees', False))
 
-    def fee_per_kb(self, dyn=None, mempool=None):
+    def _feerate_from_fractional_slider_position(self, fee_level: float, dyn: bool,
+                                                 mempool: bool) -> Union[int, None]:
+        fee_level = max(fee_level, 0)
+        fee_level = min(fee_level, 1)
+        if dyn:
+            max_pos = (len(FEE_DEPTH_TARGETS) - 1) if mempool else len(FEE_ETA_TARGETS)
+            slider_pos = round(fee_level * max_pos)
+            fee_rate = self.depth_to_fee(slider_pos) if mempool else self.eta_to_fee(slider_pos)
+        else:
+            max_pos = len(FEERATE_STATIC_VALUES) - 1
+            slider_pos = round(fee_level * max_pos)
+            fee_rate = FEERATE_STATIC_VALUES[slider_pos]
+        return fee_rate
+
+    def fee_per_kb(self, dyn: bool=None, mempool: bool=None, fee_level: float=None) -> Union[int, None]:
         """Returns sat/kvB fee to pay for a txn.
         Note: might return None.
+
+        fee_level: float between 0.0 and 1.0, representing fee slider position
         """
         if dyn is None:
             dyn = self.is_dynfee()
         if mempool is None:
             mempool = self.use_mempool_fees()
+        if fee_level is not None:
+            return self._feerate_from_fractional_slider_position(fee_level, dyn, mempool)
+        # there is no fee_level specified; will use config.
+        # note: 'depth_level' and 'fee_level' in config are integer slider positions,
+        # unlike fee_level here, which (when given) is a float in [0.0, 1.0]
         if dyn:
             if mempool:
                 fee_rate = self.depth_to_fee(self.get_depth_level())
@@ -473,12 +491,12 @@ class SimpleConfig(PrintError):
 
     @classmethod
     def estimate_fee_for_feerate(cls, fee_per_kb, size):
-        # note: We only allow integer sat/byte values atm.
-        # The GUI for simplicity reasons only displays integer sat/byte,
-        # and for the sake of consistency, we thus only use integer sat/byte in
-        # the backend too.
-        fee_per_byte = int(fee_per_kb / 1000)
-        return int(fee_per_byte * size)
+        fee_per_kb = Decimal(fee_per_kb)
+        fee_per_byte = fee_per_kb / 1000
+        # to be consistent with what is displayed in the GUI,
+        # the calculation needs to use the same precision:
+        fee_per_byte = quantize_feerate(fee_per_byte)
+        return round(fee_per_byte * size)
 
     def update_fee_estimates(self, key, value):
         self.fee_estimates[key] = value
