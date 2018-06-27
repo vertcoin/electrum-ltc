@@ -549,7 +549,7 @@ def parse_witness(vds, txin, full_parse: bool):
 def parse_output(vds, i):
     d = {}
     d['value'] = vds.read_int64()
-    if d['value'] > TOTAL_COIN_SUPPLY_LIMIT_IN_BTC * COIN:
+    if d['value'] > TOTAL_COIN_SUPPLY_LIMIT_IN_VTC * COIN:
         raise SerializationError('invalid output amount (too large)')
     if d['value'] < 0:
         raise SerializationError('invalid output amount (negative)')
