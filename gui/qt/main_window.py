@@ -283,7 +283,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def on_error(self, exc_info):
         if not isinstance(exc_info[1], UserCancelled):
-            traceback.print_exception(*exc_info)
+            try:
+                traceback.print_exception(*exc_info)
+            except OSError:
+                pass  # see #4418; try to at least show popup:
             self.show_error(str(exc_info[1]))
 
     def on_network(self, event, *args):
@@ -562,9 +565,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def show_about(self):
         QMessageBox.about(self, "Electrum",
-            _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" +
-                _("Electrum's focus is speed, with low resource usage and simplifying Vertcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Vertcoin system."  + "\n\n" +
-                _("Uses icons from the Icons8 icon pack (icons8.com).")))
+                          (_("Version")+" %s" % self.wallet.electrum_version + "\n\n" +
+                           _("Electrum's focus is speed, with low resource usage and simplifying Vertcoin.") + " " +
+                           _("You do not need to perform regular backups, because your wallet can be "
+                              "recovered from a secret phrase that you can memorize or write on paper.") + " " +
+                           _("Startup times are instant because it operates in conjunction with high-performance "
+                              "servers that handle the most complicated parts of the Vertcoin system.") + "\n\n" +
+                           _("Uses icons from the Icons8 icon pack (icons8.com).")))
 
     def show_report_bug(self):
         msg = ' '.join([
@@ -1205,9 +1212,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.payto_e.textChanged.connect(self.update_fee)
         self.amount_e.textEdited.connect(self.update_fee)
 
-        def reset_max(t):
+        def reset_max(text):
             self.is_max = False
-            self.max_button.setEnabled(not bool(t))
+            enable = not bool(text) and not self.amount_e.isReadOnly()
+            self.max_button.setEnabled(enable)
         self.amount_e.textEdited.connect(reset_max)
         self.fiat_send_e.textEdited.connect(reset_max)
 
@@ -1652,8 +1660,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def prepare_for_payment_request(self):
         self.show_send_tab()
         self.payto_e.is_pr = True
-        for e in [self.payto_e, self.amount_e, self.message_e]:
+        for e in [self.payto_e, self.message_e]:
             e.setFrozen(True)
+        self.lock_amount(True)
         self.payto_e.setText(_("please wait..."))
         return True
 

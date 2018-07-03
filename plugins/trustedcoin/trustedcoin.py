@@ -228,6 +228,15 @@ class Wallet_2fa(Multisig_Wallet):
         Deterministic_Wallet.__init__(self, storage)
         self.is_billing = False
         self.billing_info = None
+        self._load_billing_addresses()
+
+    def _load_billing_addresses(self):
+        billing_addresses = self.storage.get('trustedcoin_billing_addresses', {})
+        self._billing_addresses = {}  # index -> addr
+        # convert keys from str to int
+        for index, addr in list(billing_addresses.items()):
+            self._billing_addresses[int(index)] = addr
+        self._billing_addresses_set = set(self._billing_addresses.values())  # set of addrs
 
     def can_sign_without_server(self):
         return not self.keystores['x2/'].is_watching_only()
@@ -257,7 +266,8 @@ class Wallet_2fa(Multisig_Wallet):
             return 0
         n = self.num_prepay(config)
         price = int(self.price_per_tx[n])
-        assert price <= 100000 * n
+        if price > 100000 * n:
+            raise Exception('too high trustedcoin fee ({} for {} txns)'.format(price, n))
         return price
 
     def make_unsigned_transaction(self, coins, outputs, config, fixed_fee=None,
@@ -295,7 +305,33 @@ class Wallet_2fa(Multisig_Wallet):
         self.print_error("twofactor: is complete", tx.is_complete())
         # reset billing_info
         self.billing_info = None
+        self.plugin.start_request_thread(self)
 
+    def add_new_billing_address(self, billing_index: int, address: str):
+        saved_addr = self._billing_addresses.get(billing_index)
+        if saved_addr is not None:
+            if saved_addr == address:
+                return  # already saved this address
+            else:
+                raise Exception('trustedcoin billing address inconsistency.. '
+                                'for index {}, already saved {}, now got {}'
+                                .format(billing_index, saved_addr, address))
+        # do we have all prior indices? (are we synced?)
+        largest_index_we_have = max(self._billing_addresses) if self._billing_addresses else -1
+        if largest_index_we_have + 1 < billing_index:  # need to sync
+            for i in range(largest_index_we_have + 1, billing_index):
+                addr = make_billing_address(self, i)
+                self._billing_addresses[i] = addr
+                self._billing_addresses_set.add(addr)
+        # save this address; and persist to disk
+        self._billing_addresses[billing_index] = address
+        self._billing_addresses_set.add(address)
+        self.storage.put('trustedcoin_billing_addresses', self._billing_addresses)
+        # FIXME this often runs in a daemon thread, where storage.write will fail
+        self.storage.write()
+
+    def is_billing_address(self, addr: str) -> bool:
+        return addr in self._billing_addresses_set
 
 
 # Utility functions
@@ -363,13 +399,9 @@ class TrustedCoinPlugin(BasePlugin):
     def get_tx_extra_fee(self, wallet, tx):
         if type(wallet) != Wallet_2fa:
             return
-        if wallet.billing_info is None:
-            assert wallet.can_sign_without_server()
-            return None
-        address = wallet.billing_info['billing_address']
         for _type, addr, amount in tx.outputs():
-            if _type == TYPE_ADDRESS and addr == address:
-                return address, amount
+            if _type == TYPE_ADDRESS and wallet.is_billing_address(addr):
+                return addr, amount
 
     def finish_requesting(func):
         def f(self, *args, **kwargs):
@@ -389,11 +421,15 @@ class TrustedCoinPlugin(BasePlugin):
         except ErrorConnectingServer as e:
             self.print_error('cannot connect to TrustedCoin server: {}'.format(e))
             return
-        billing_address = make_billing_address(wallet, billing_info['billing_index'])
-        assert billing_address == billing_info['billing_address']
+        billing_index = billing_info['billing_index']
+        billing_address = make_billing_address(wallet, billing_index)
+        if billing_address != billing_info['billing_address']:
+            raise Exception('unexpected trustedcoin billing address: expected {}, received {}'
+                            .format(billing_address, billing_info['billing_address']))
+        wallet.add_new_billing_address(billing_index, billing_address)
         wallet.billing_info = billing_info
         wallet.price_per_tx = dict(billing_info['price_per_tx'])
-        wallet.price_per_tx.pop(1)
+        wallet.price_per_tx.pop(1, None)
         return True
 
     def start_request_thread(self, wallet):
@@ -449,7 +485,8 @@ class TrustedCoinPlugin(BasePlugin):
             # note: pre-2.7 2fa seeds were typically 24-25 words, however they
             # could probabilistically be arbitrarily shorter due to a bug. (see #3611)
             # the probability of it being < 20 words is about 2^(-(256+12-19*11)) = 2^(-59)
-            assert passphrase == ''
+            if passphrase != '':
+                raise Exception('old 2fa seed cannot have passphrase')
             xprv1, xpub1 = self.get_xkeys(' '.join(words[0:12]), '', "m/")
             xprv2, xpub2 = self.get_xkeys(' '.join(words[12:]), '', "m/")
         elif n==12:
@@ -558,11 +595,13 @@ class TrustedCoinPlugin(BasePlugin):
                 return
             _xpub3 = r['xpubkey_cosigner']
             _id = r['id']
-            try:
-                assert _id == short_id, ("user id error", _id, short_id)
-                assert xpub3 == _xpub3, ("xpub3 error", xpub3, _xpub3)
-            except Exception as e:
-                wizard.show_message(str(e))
+            if short_id != _id:
+                wizard.show_message("unexpected trustedcoin short_id: expected {}, received {}"
+                                    .format(short_id, _id))
+                return
+            if xpub3 != _xpub3:
+                wizard.show_message("unexpected trustedcoin xpub3: expected {}, received {}"
+                                    .format(xpub3, _xpub3))
                 return
         self.request_otp_dialog(wizard, short_id, otp_secret, xpub3)
 
@@ -603,10 +642,8 @@ class TrustedCoinPlugin(BasePlugin):
 
     def on_reset_auth(self, wizard, short_id, seed, passphrase, xpub3):
         xprv1, xpub1, xprv2, xpub2 = self.xkeys_from_seed(seed, passphrase)
-        try:
-            assert xpub1 == wizard.storage.get('x1/')['xpub']
-            assert xpub2 == wizard.storage.get('x2/')['xpub']
-        except:
+        if (wizard.storage.get('x1/')['xpub'] != xpub1 or
+                wizard.storage.get('x2/')['xpub'] != xpub2):
             wizard.show_message(_('Incorrect seed'))
             return
         r = server.get_challenge(short_id)

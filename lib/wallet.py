@@ -1849,6 +1849,10 @@ class Abstract_Wallet(PrintError):
                 p = self.price_at_timestamp(txid, price_func)
                 return p * txin_value/Decimal(COIN)
 
+    def is_billing_address(self, addr):
+        # overloaded for TrustedCoin wallets
+        return False
+
 
 class Simple_Wallet(Abstract_Wallet):
     # wallet with a single keystore
@@ -1985,7 +1989,7 @@ class Imported_Wallet(Simple_Wallet):
         self.addresses.pop(address)
         if pubkey:
             # delete key iff no other address uses it (e.g. p2pkh and p2wpkh for same key)
-            for txin_type in bitcoin.SCRIPT_TYPES.keys():
+            for txin_type in bitcoin.WIF_SCRIPT_TYPES.keys():
                 try:
                     addr2 = bitcoin.pubkey_to_address(txin_type, pubkey)
                 except NotImplementedError:

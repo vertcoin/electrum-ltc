@@ -80,6 +80,7 @@ setup(
     package_data={
         '': ['*.txt', '*.json', '*.ttf', '*.otf'],
         'electrum_vtc': [
+            'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
         ],
     },

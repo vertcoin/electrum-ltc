@@ -41,7 +41,14 @@ fi
 git submodule init
 git submodule update
 
+VERSION=`git describe --tags --dirty`
+echo "Last commit: $VERSION"
+
 pushd ./contrib/deterministic-build/electrum-locale
+if ! which msgfmt > /dev/null 2>&1; then
+    echo "Please install gettext"
+    exit 1
+fi
 for i in ./locale/*; do
     dir=$i/LC_MESSAGES
     mkdir -p $dir
@@ -49,8 +56,6 @@ for i in ./locale/*; do
 done
 popd
 
-VERSION=`git describe --tags --dirty`
-echo "Last commit: $VERSION"
 find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
@@ -74,7 +79,7 @@ cd ..
 rm -rf dist/
 
 # build standalone and portable versions
-wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --name $NAME_ROOT-$VERSION -w deterministic.spec
+wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --clean --name $NAME_ROOT-$VERSION -w deterministic.spec
 
 # set timestamps in dist, in order to make the installer reproducible
 pushd dist

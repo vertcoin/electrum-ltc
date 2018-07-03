@@ -124,11 +124,6 @@ class Synchronizer(ThreadJob):
         # tx_fees
         tx_fees = [(item['tx_hash'], item.get('fee')) for item in result]
         tx_fees = dict(filter(lambda x:x[1] is not None, tx_fees))
-        # Note if the server hasn't been patched to sort the items properly
-        if hist != sorted(hist, key=lambda x:x[1]):
-            interface = self.network.interface
-            # note: we don't actually know which interface was used if it was *just* changed
-            if interface: interface.print_error("serving improperly sorted address histories")
         # Check that txids are unique
         if len(hashes) != len(result):
             self.print_error("error: server history has non-unique txids: %s"% addr)
@@ -150,12 +145,15 @@ class Synchronizer(ThreadJob):
         if not params:
             return
         tx_hash = params[0]
-        #assert tx_hash == hash_encode(Hash(bytes.fromhex(result)))
         tx = Transaction(result)
         try:
             tx.deserialize()
         except Exception:
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
+            return
+        if tx_hash != tx.txid():
+            self.print_error("received tx does not match expected txid ({} != {})"
+                             .format(tx_hash, tx.txid()))
             return
         tx_height = self.requested_tx.pop(tx_hash)
         self.wallet.receive_tx_callback(tx_hash, tx, tx_height)
