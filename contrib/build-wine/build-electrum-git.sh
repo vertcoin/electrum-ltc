@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME_ROOT=electrum
+NAME_ROOT=electrum-vtc
 PYTHON_VERSION=3.5.4
 
 # These settings probably don't need any change
@@ -23,7 +23,7 @@ if [ -d ./electrum ]; then
   rm ./electrum -rf
 fi
 
-git clone https://github.com/spesmilo/electrum -b master
+git clone https://github.com/vertcoin-project/electrum-vtc -b 3.2.2 electrum
 
 pushd electrum
 if [ ! -z "$1" ]; then
