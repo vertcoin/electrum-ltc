@@ -160,7 +160,7 @@ wine mingw-get install mingw-utils
 wine mingw-get install mingw32-libz
 
 printf "[build]\ncompiler=mingw32\n" > $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/distutils.cfg
-patch $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py -i $here/distutils.patch -o $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py
+cp $here/cygwincompiler.py $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py
 cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/vcruntime140.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/libs/
 
 # add dlls needed for pyinstaller:
