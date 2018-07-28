@@ -145,10 +145,10 @@ cp libusb/MS32/dll/libusb-1.0.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/
 # Install MinGW
 mkdir mingw-get
 pushd mingw-get
-wget http://downloads.sourceforge.net/project/mingw/Installer/mingw-get/mingw-get-0.6.2-beta-20131004-1/mingw-get-0.6.2-mingw32-beta-20131004-1-bin.xz
-tar xvf mingw-get-0.6.2-mingw32-beta-20131004-1-bin.xz
+wget http://downloads.sourceforge.net/project/mingw/Installer/mingw-get/mingw-get-0.6.2-beta-20131004-1/mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
+tar xvf mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
 mkdir $WINEPREFIX/drive_c/MinGW
-rm mingw-get-0.6.2-mingw32-beta-20131004-1-bin.xz
+rm mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
 cp -r * $WINEPREFIX/drive_c/MinGW/
 popd
 
