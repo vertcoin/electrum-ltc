@@ -28,12 +28,12 @@ import os
 
 import requests
 
-from electrum import ELECTRUM_VERSION, constants
-from electrum.i18n import _
+from electrum_vtc import ELECTRUM_VERSION, constants
+from electrum_vtc.i18n import _
 
 
 class BaseCrashReporter(object):
-    report_server = "https://crashhub.electrum.org"
+    report_server = ""
     config_key = "show_crash_reporter"
     issue_template = """<h2>Traceback</h2>
 <pre>

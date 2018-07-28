@@ -30,7 +30,7 @@ from .util import bfh, bh2u
 
 import lyra2re_hash
 import lyra2re2_hash
-import vtc_scrypt
+import vtc_scrypt_new
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
@@ -80,7 +80,7 @@ def pow_hash_header(header):
     elif height >= 208301:
         return hash_encode(lyra2re_hash.getPoWHash(header_bytes))
     else:
-        return hash_encode(vtc_scrypt.getPoWHash(header_bytes))
+        return hash_encode(vtc_scrypt_new.getPoWHash(header_bytes))
 
 blockchains = {}
 

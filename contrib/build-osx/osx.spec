@@ -5,9 +5,9 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, coll
 import sys
 import os
 
-PACKAGE='Electrum'
-PYPKG='electrum'
-MAIN_SCRIPT='electrum'
+PACKAGE='Electrum-VTC'
+PYPKG='electrum-vtc'
+MAIN_SCRIPT='electrum-vtc'
 ICONS_FILE='electrum.icns'
 
 for i, x in enumerate(sys.argv):
@@ -52,7 +52,8 @@ a = Analysis([electrum+MAIN_SCRIPT,
               electrum+'lib/wallet.py',
               electrum+'lib/simple_config.py',
               electrum+'lib/bitcoin.py',
-              electrum+'lib/dnssec.py',
+              electrum+'lib/blockchain.py',
+	      electrum+'lib/dnssec.py',
               electrum+'lib/commands.py',
               electrum+'plugins/cosigner_pool/qt.py',
               electrum+'plugins/email_requests/qt.py',
