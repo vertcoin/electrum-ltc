@@ -103,8 +103,8 @@ for server in $(shuf -e ha.pool.sks-keyservers.net \
 done
 for msifile in core dev exe lib pip tools; do
     echo "Installing $msifile..."
-    wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/win32/${msifile}.msi"
-    wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/win32/${msifile}.msi.asc"
+    wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/amd64/${msifile}.msi"
+    wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/amd64/${msifile}.msi.asc"
     verify_signature "${msifile}.msi.asc" $KEYRING_PYTHON_DEV
     wine msiexec /i "${msifile}.msi" /qb TARGETDIR=C:/python$PYTHON_VERSION
 done
@@ -141,27 +141,6 @@ verify_hash $LIBUSB_FILENAME "$LIBUSB_SHA256"
 7z x -olibusb $LIBUSB_FILENAME -aoa
 
 cp libusb/MS32/dll/libusb-1.0.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/
-
-# Install MinGW
-mkdir mingw-get
-pushd mingw-get
-wget http://downloads.sourceforge.net/project/mingw/Installer/mingw-get/mingw-get-0.6.2-beta-20131004-1/mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
-tar xvf mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
-mkdir $WINEPREFIX/drive_c/MinGW
-rm mingw-get-0.6.2-mingw32-beta-20131004-1-bin.tar.xz
-cp -r * $WINEPREFIX/drive_c/MinGW/
-popd
-
-oldPath=`wine cmd /c echo %PATH%`
-wine reg ADD "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH /d "$oldPath;c:\MinGW\bin" /t REG_SZ /f
-
-wine mingw-get install gcc
-wine mingw-get install mingw-utils
-wine mingw-get install mingw32-libz
-
-printf "[build]\ncompiler=mingw32\n" > $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/distutils.cfg
-cp $here/cygwinccompiler.py $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/distutils/cygwinccompiler.py
-cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/vcruntime140.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/libs/
 
 # add dlls needed for pyinstaller:
 cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/site-packages/PyQt5/Qt/bin/* $WINEPREFIX/drive_c/python$PYTHON_VERSION/

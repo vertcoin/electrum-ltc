@@ -32,7 +32,7 @@ fi
 git reset --hard 452d8e4d2a2f9f1b5be6b02e18f1ba102e5ca0b4
 git clean -f -x -q
 
-build_dll i686-w64-mingw32  # 64-bit would be: x86_64-w64-mingw32
+build_dll x86_64-w64-mingw32
 mv .libs/libsecp256k1-0.dll libsecp256k1.dll
 
 find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
