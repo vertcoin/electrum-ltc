@@ -68,6 +68,8 @@ cp ./electrum/contrib/deterministic-build/electrum-icons/icons_rc.py $WINEPREFIX
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../deterministic-build/requirements.txt
 
+$PYTHON -m pip install -r ../../deterministic-build/requirements-windows.txt
+
 $PYTHON -m pip install -r ../../deterministic-build/requirements-hw.txt
 
 pushd $WINEPREFIX/drive_c/electrum

@@ -69,6 +69,7 @@ cp $BUILDDIR/secp256k1/.libs/libsecp256k1.0.dylib contrib/build-osx
 
 info "Installing requirements..."
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements.txt --user && \
+python3 -m pip install -Ir ./contrib/deterministic-build/requirements-other.txt --user && \
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements-binaries.txt --user || \
 fail "Could not install requirements"
 

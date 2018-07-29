@@ -1,0 +1,5 @@
+lyra2re2_hash==1.1.2 \
+    --hash=sha256:e45eb16ca796fc2f5cff352225b3f6488cc9c42a682026318a02fae50f5a3294
+vtc_scrypt_new==1.1.5 \
+    --hash=sha256:9f44d1014e0bd76cf00f9c46870fd9bfbb307ac226b87eaeac7cfdba3a7ed547
+
