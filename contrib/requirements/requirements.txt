@@ -8,5 +8,5 @@ dnspython
 jsonrpclib-pelix
 PySocks>=1.6.6
 qdarkstyle<3.0
-lyra2re2_hash
+lyra2re2_hash>=1.2.0
 vtc_scrypt_new

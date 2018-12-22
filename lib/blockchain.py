@@ -30,6 +30,7 @@ from .util import bfh, bh2u
 
 import lyra2re_hash
 import lyra2re2_hash
+import lyra2re3_hash
 import vtc_scrypt_new
 
 MAX_TARGET = 0x00000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
@@ -75,7 +76,9 @@ def hash_header(header):
 def pow_hash_header(header):
     height = header.get('block_height')
     header_bytes = bfh(serialize_header(header))
-    if height >= 347000:
+    if height >= 1080000:
+        return hash_encode(lyra2re3_hash.getPoWHash(header_bytes))
+    elif height >= 347000:
         return hash_encode(lyra2re2_hash.getPoWHash(header_bytes))
     elif height >= 208301:
         return hash_encode(lyra2re_hash.getPoWHash(header_bytes))
@@ -397,12 +400,11 @@ class Blockchain(util.PrintError):
             EventHorizonDeviationSlow = float(1) / float(EventHorizonDeviation)
 
             if (PastBlocksMass >= PastBlocksMin):
-
                 if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) or (PastRateAdjustmentRatio >= EventHorizonDeviationFast)):
                     break
 
-                if (BlockReadingIndex < 1):
-                    break
+            if (BlockReadingIndex < 1 or (BlockReadingIndex == 1080000 and not constants.net.TESTNET)):
+                break
 
             BlockReadingIndex = BlockReadingIndex - 1
 
@@ -433,6 +435,9 @@ class Blockchain(util.PrintError):
             bitsN = (bits >> 24) & 0xff
             target = bitsBase << (8 * (bitsN - 3))
             return bits, target 
+        if height >= 1080000 and height < 1080010:
+            bits = 0x1b0ffff0            
+            return bits, self.convbignum(bits) 
         index = height // 2016
         if index < len(self.checkpoints) and (height % 2016 == 0):
             _, t, b, _ = self.checkpoints[index]
