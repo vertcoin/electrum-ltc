@@ -49,5 +49,11 @@
         "pruning": "-",
         "t": "51001",
         "version": "1.2"
+    },
+    "electrum.gertjaap.org": {
+        "pruning": "-",
+        "s": "55002",
+        "t": "55001",
+        "version": "1.2"
     }
 }
