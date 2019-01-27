@@ -76,7 +76,7 @@ def hash_header(header):
 def pow_hash_header(header):
     height = header.get('block_height')
     header_bytes = bfh(serialize_header(header))
-    if height >= 1080000:
+    if height > 1080000:
         return hash_encode(lyra2re3_hash.getPoWHash(header_bytes))
     elif height >= 347000:
         return hash_encode(lyra2re2_hash.getPoWHash(header_bytes))
