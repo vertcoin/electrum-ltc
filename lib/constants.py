@@ -43,6 +43,7 @@ class VertcoinMainnet:
     WIF_PREFIX = 0x80
     ADDRTYPE_P2PKH = 71
     ADDRTYPE_P2SH = 5
+    BIP44_COIN_TYPE = 28
     SEGWIT_HRP = "vtc"
     GENESIS = "4d96a915f49d40b1e5c2844d1ee2dccb90013a990ccea12c492d22110489f0c4"
     DEFAULT_PORTS = {'t': '55001', 's': '55002'}
