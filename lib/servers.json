@@ -17,12 +17,6 @@
         "t": "55001",
         "version": "1.2"
     },
-    "vtc.lukechilds.co": {
-        "pruning": "-",
-        "s": "55002",
-        "t": "55001",
-        "version": "1.2"
-    },
     "vtc-cce-1.coinomi.net": {
         "pruning": "-",
         "t": "5028",
